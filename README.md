@@ -14,6 +14,6 @@ Current API v1.0.0:
 
     When is garbage day? Recycling day?
 
-* GET http://1.appletonapi.appspot.com/property/312030300/
+* GET http://1.appletonapi.appspot.com/property/312030300
 * Given a property, returns a JSON result: day of the week the garbage picked up, recycling picked up, and next date of pickup?
 
