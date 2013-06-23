@@ -142,7 +142,7 @@ class MainHandler(webapp2.RequestHandler):
 </ul>
 <p>When is garbage day? Recycling day?</p>
 <ul>
-<li>GET http://1.appletonapi.appspot.com/property/312030300/</li>
+<li>GET http://1.appletonapi.appspot.com/property/312030300</li>
 <li>Given a property, returns a JSON result: day of the week the garbage picked up, recycling picked up, and next date of pickup?</li>
 </ul>
 <hr>
