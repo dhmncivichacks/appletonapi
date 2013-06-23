@@ -131,8 +131,17 @@ class MainHandler(webapp2.RequestHandler):
 <![endif]-->
 </head>
 <body>
+<style>
+#forkongithub a{background:#000;color:#fff;text-decoration:none;font-family:arial, sans-serif;text-align:center;font-weight:bold;padding:5px 40px;font-size:1rem;line-height:2rem;position:relative;transition:0.5s;}
+#forkongithub a:hover{background:#060;color:#fff;}
+#forkongithub a::before,#forkongithub a::after{content:"";width:100%;display:block;position:absolute;top:1px;left:0;height:1px;background:#fff;}
+#forkongithub a::after{bottom:1px;top:auto;}@media screen and (min-width:800px){#forkongithub{position:absolute;display:block;top:0;right:0;width:200px;overflow:hidden;height:200px;}
+#forkongithub a{width:200px;position:absolute;top:60px;right:-60px;transform:rotate(45deg);-webkit-transform:rotate(45deg);box-shadow:4px 4px 10px rgba(0,0,0,0.8);}}
+</style>
+<span id="forkongithub"><a href="https://github.com/mikeputnam/appletonapi">Fork me on GitHub</a></span>
 <p>AppletonAPI is the humble beginning of a RESTful API for Appleton, WI civic data.</p>
 <p>All data presented by AppletonAPI is directly from <a href="http://my.appleton.org/">http://my.appleton.org/</a> and presented in a manner usable by client programmers.</p>
+<p><a href="https://github.com/mikeputnam/appletonapi">Source code available on Github.</a></p>
 <hr>
 <p>Current API v1.0.0:</p>
 <p>Search for a property within the city of Appleton using house number and base street name.</p>
