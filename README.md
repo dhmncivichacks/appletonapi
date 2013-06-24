@@ -1,7 +1,7 @@
 appletonapi
 ===========
 
-AppletonAPI is the humble beginning of a RESTful API for Appleton, WI civic data.
+[AppletonAPI](http://appletonapi.appspot.com/) is the humble beginning of a RESTful API for Appleton, WI civic data.
 
 All data presented by AppletonAPI is directly from http://my.appleton.org/ and presented in a manner usable by client programmers.
 
