@@ -15,8 +15,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
 from google.appengine.api import memcache
+from google.appengine.api import namespace_manager
 import json
 import logging
+import os
 import re
 import urllib
 import urllib2
@@ -34,29 +36,90 @@ def sanitizeinput(rawinput):
 
 class PropertyHandler(webapp2.RequestHandler):
     def get(self,propkey):
-        p = memcache.get(sanitizeinput(propkey))   
+        #UNTESTED FIXME
+        propkey = sanitizeinput(propkey)
+        major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
+        namespace_manager.set_namespace(major_ver)
+        logging.debug("namespace: " + major_ver)
+        p = memcache.get(propkey)   
         if p is not None:             
+            logging.debug("from memcache: " + propkey)
             self.response.headers["Content-Type"] = "application/json"
             self.response.out.write(json.dumps(p))
         else:                         
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             scrapehooks =  [
             "Garbage Day",
-            "Recycle Day"
+            "Recycle Day",
+            "Water Source",
+            "Sanitary District",
+            "School District",
+            "Elementary School",
+            "Middle School",
+            "High School",
+            "Fire Station Number",
+            "Fire Station Address",
+            "Polling Location",
+            "Alderman",
+            "Alderman District",
+            "City Ward",
+            "County",
+            "County Supervisor District",
+            "Assembly District",
+            "Senate District",
+            "Congressional District",
+            "Who Represents Me",
+            "Assessment Class",
+            "Name",
+            "Address",
+            "Legal Description",
+            "Frontage/SqFt/Acres",
+            "Effective Depth",
+            "Shape",
+            "Land",
+            "Building",
+            "Total",
+            "Partial/Full Assessment",
+            "Property Taxes",
+            "Special Assesments",
+            "State Credits",
+            "Less Lottery Credit",
+            "1st Dollar Credit",
+            "Tax Bill Amount",
+            "Amount Collected",
+            "Interest Due",
+            "Balance Due"
+            #Structure Type"
+            #Year Built
+            #Number of Stories
+            #Exterior Wall Type
+            #Building Area
+            #Framing Type
+            #Wall Height
             ]
-            datalist = []
+            datadict = {}
             try:
                 response = urllib2.urlopen(detailurl)
                 for line in response:
                     for h in scrapehooks:
                         if h in line:
+                            """
+                            something is amiss
+                            """
                             m = re.search('(?<=</td><td>).*', line)
                             if m:
-                                datalist.append( re.split('</td></tr>',m.group(0))[0] )
+                                item = re.split('</td></tr>',m.group(0))[0]
+                                matchspan = re.search('(>){1}(.*)</span>',item)
+                                if matchspan:
+                                    itemwithspan = re.split('</span>',matchspan.group(2))[0]
+                                    datadict[h] = itemwithspan
+                                else:
+                                    datadict[h] = item
                             if h == scrapehooks[-1]:
+                                logging.debug("setting memcache for key: " + propkey)
+                                memcache.add(str(propkey),datadict) 
                                 self.response.headers["Content-Type"] = "application/json"
-                                self.response.out.write(json.dumps(datalist))
-                                memcache.add(str(propkey),datalist) 
+                                self.response.out.write(json.dumps(datadict))
             except urllib2.HTTPError, response:
                 self.response.out.write( 'error - Scrape',response)
 
