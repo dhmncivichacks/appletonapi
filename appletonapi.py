@@ -16,6 +16,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
+#from lxml import etree
+import lxml.etree
 import json
 import logging
 import os
@@ -26,7 +28,7 @@ import webapp2
 
 def extracttagvalues(line):
     m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
-    if m:
+    if m: 
         return re.split('value="',m.group(0))[0]
 
 def sanitizeinput(rawinput):
@@ -99,13 +101,15 @@ class PropertyHandler(webapp2.RequestHandler):
             ]
             datadict = {}
             try:
-                response = urllib2.urlopen(detailurl)
+                responsehtml = urllib2.urlopen(detailurl).read()
+                import lxml.html
+                htmlelements = lxml.html.fromstring(responsehtml)
+                result = [el.text_content() for el in htmlelements]
+                self.response.out.write("<h1>something to 200: </h1>"+str(result))
+                """
                 for line in response:
                     for h in scrapehooks:
                         if h in line:
-                            """
-                            something is amiss
-                            """
                             m = re.search('(?<=</td><td>).*', line)
                             if m:
                                 item = re.split('</td></tr>',m.group(0))[0]
@@ -120,6 +124,7 @@ class PropertyHandler(webapp2.RequestHandler):
                                 memcache.add(str(propkey),datadict) 
                                 self.response.headers["Content-Type"] = "application/json"
                                 self.response.out.write(json.dumps(datadict))
+                """
             except urllib2.HTTPError, response:
                 self.response.out.write( 'error - Scrape',response)
 
