@@ -50,80 +50,31 @@ class PropertyHandler(webapp2.RequestHandler):
             self.response.out.write(json.dumps(p))
         else:                         
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
-            scrapehooks =  [
-            "Garbage Day",
-            "Recycle Day",
-            "Water Source",
-            "Sanitary District",
-            "School District",
-            "Elementary School",
-            "Middle School",
-            "High School",
-            "Fire Station Number",
-            "Fire Station Address",
-            "Polling Location",
-            "Alderman",
-            "Alderman District",
-            "City Ward",
-            "County",
-            "County Supervisor District",
-            "Assembly District",
-            "Senate District",
-            "Congressional District",
-            "Who Represents Me",
-            "Assessment Class",
-            "Name",
-            "Address",
-            "Legal Description",
-            "Frontage/SqFt/Acres",
-            "Effective Depth",
-            "Shape",
-            "Land",
-            "Building",
-            "Total",
-            "Partial/Full Assessment",
-            "Property Taxes",
-            "Special Assesments",
-            "State Credits",
-            "Less Lottery Credit",
-            "1st Dollar Credit",
-            "Tax Bill Amount",
-            "Amount Collected",
-            "Interest Due",
-            "Balance Due"
-            #Structure Type"
-            #Year Built
-            #Number of Stories
-            #Exterior Wall Type
-            #Building Area
-            #Framing Type
-            #Wall Height
-            ]
             datadict = {}
             try:
                 responsehtml = urllib2.urlopen(detailurl).read()
                 import lxml.html
-                htmlelements = lxml.html.fromstring(responsehtml)
-                result = [el.text_content() for el in htmlelements]
-                self.response.out.write("<h1>something to 200: </h1>"+str(result))
+                docroot = lxml.html.fromstring(responsehtml)
+                elements = docroot.xpath("//table[@class='t1']/tr/th | //table[@class='t1']/tr/td")
+                result = ""
+                for el in elements:
+                    #FIXME
+                    """
+                    if el.tag == 'th': 
+                        new json?
+                    else:
+                        even/odd ~  key/value
+                        append key:value to current json?
+                    """
+                    lxml.etree.strip_tags(el, 'strong')
+                    if el.text:
+                        result += el.text.strip() + "|"
+                self.response.out.write("<h1>something to 200: </h1><pre>"+unicode(result)+"</pre>")
                 """
-                for line in response:
-                    for h in scrapehooks:
-                        if h in line:
-                            m = re.search('(?<=</td><td>).*', line)
-                            if m:
-                                item = re.split('</td></tr>',m.group(0))[0]
-                                matchspan = re.search('(>){1}(.*)</span>',item)
-                                if matchspan:
-                                    itemwithspan = re.split('</span>',matchspan.group(2))[0]
-                                    datadict[h] = itemwithspan
-                                else:
-                                    datadict[h] = item
-                            if h == scrapehooks[-1]:
-                                logging.debug("setting memcache for key: " + propkey)
-                                memcache.add(str(propkey),datadict) 
-                                self.response.headers["Content-Type"] = "application/json"
-                                self.response.out.write(json.dumps(datadict))
+                    logging.debug("setting memcache for key: " + propkey)
+                    memcache.add(str(propkey),datadict) 
+                    self.response.headers["Content-Type"] = "application/json"
+                    self.response.out.write(json.dumps(datadict))
                 """
             except urllib2.HTTPError, response:
                 self.response.out.write( 'error - Scrape',response)
