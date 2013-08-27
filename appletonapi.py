@@ -16,10 +16,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
-#from lxml import etree
-import lxml.etree
 import json
 import logging
+import lxml.etree
+import lxml.html
 import os
 import re
 import urllib
@@ -31,15 +31,15 @@ def extracttagvalues(line):
     if m: 
         return re.split('value="',m.group(0))[0]
 
-def sanitizeinput(rawinput):
+def sanitizeinputwords(rawinput):
     m = re.search('^\w+$', rawinput)
     if m:
         return m.group(0)
 
 class PropertyHandler(webapp2.RequestHandler):
     def get(self,propkey):
-        #UNTESTED FIXME
-        propkey = sanitizeinput(propkey)
+        #memcache namespace changes UNTESTED FIXME
+        propkey = sanitizeinputwords(propkey)
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
         namespace_manager.set_namespace(major_ver)
         logging.debug("namespace: " + major_ver)
@@ -50,39 +50,41 @@ class PropertyHandler(webapp2.RequestHandler):
             self.response.out.write(json.dumps(p))
         else:                         
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
-            datadict = {}
+            datagroups = []
             try:
-                responsehtml = urllib2.urlopen(detailurl).read()
-                import lxml.html
-                docroot = lxml.html.fromstring(responsehtml)
-                elements = docroot.xpath("//table[@class='t1']/tr/th | //table[@class='t1']/tr/td")
-                result = ""
-                for el in elements:
-                    #FIXME
-                    """
-                    if el.tag == 'th': 
-                        new json?
-                    else:
-                        even/odd ~  key/value
-                        append key:value to current json?
-                    """
-                    lxml.etree.strip_tags(el, 'strong')
-                    if el.text:
-                        result += el.text.strip() + "|"
-                self.response.out.write("<h1>something to 200: </h1><pre>"+unicode(result)+"</pre>")
-                """
-                    logging.debug("setting memcache for key: " + propkey)
-                    memcache.add(str(propkey),datadict) 
-                    self.response.headers["Content-Type"] = "application/json"
-                    self.response.out.write(json.dumps(datadict))
-                """
+                docroot = lxml.html.fromstring(urllib2.urlopen(detailurl).read())
+                tables = docroot.xpath("//table[@class='t1']")
+                for table in tables:
+                    ths = table.xpath("./tr/th")
+                    for th in ths:
+                        lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
+                        if th.text:
+                            datagroups.append(th.text.strip())
+                    datadict = {}
+                    tdcounter = 0
+                    tds = table.xpath("./tr/td")
+                    #cleanse asterisks and ampersands etc FIXME
+                    for td in tds:
+                        lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                        if tdcounter == 0:
+                            tdkey = td.text.strip() if td.text else ''
+                            tdcounter += 1
+                        else:
+                            tdvalue = td.text.strip() if td.text else ''
+                            tdcounter = 0
+                            datadict[tdkey] = tdvalue
+                    datagroups.append(datadict)
+                logging.debug("setting memcache for key: " + propkey)
+                memcache.add(str(propkey),datagroups) 
+                self.response.headers["Content-Type"] = "application/json"
+                self.response.out.write(json.dumps(datagroups))
             except urllib2.HTTPError, response:
                 self.response.out.write( 'error - Scrape',response)
 
 class SearchHandler(webapp2.RequestHandler):
    def get(self):
-        housenumber = sanitizeinput(str(self.request.get('h')))
-        street = sanitizeinput(str(self.request.get('s')))
+        housenumber = sanitizeinputwords(str(self.request.get('h')))
+        street = sanitizeinputwords(str(self.request.get('s')))
         if not housenumber and not street:
             self.response.out.write('Give me *SOMETHING* to search for.')
             return
