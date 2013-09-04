@@ -47,7 +47,7 @@ class PropertyHandler(webapp2.RequestHandler):
         if p is not None:             
             logging.debug("from memcache: " + propkey)
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(p))
+            self.response.out.write(json.dumps(p, sort_keys=True,indent=4, separators=(',', ': ')))
         else:                         
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             datagroups = []
@@ -77,9 +77,9 @@ class PropertyHandler(webapp2.RequestHandler):
                 logging.debug("setting memcache for key: " + propkey)
                 memcache.add(str(propkey),datagroups) 
                 self.response.headers["Content-Type"] = "application/json"
-                self.response.out.write(json.dumps(datagroups))
+                self.response.out.write(json.dumps(datagroups, sort_keys=True,indent=4, separators=(',', ': ')))
             except urllib2.HTTPError, response:
-                self.response.out.write( 'error - Scrape',response)
+                self.response.out.write( 'error - Scrape: ' + str(response))
 
 class SearchHandler(webapp2.RequestHandler):
    def get(self):
@@ -133,7 +133,7 @@ class SearchHandler(webapp2.RequestHandler):
                             allresults.append(searchresult)
 
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(allresults))
+            self.response.out.write(json.dumps(allresults, sort_keys=True,indent=4, separators=(',', ': ')))
         except urllib2.HTTPError, response:
             self.response.out.write("500 - Cannot search :(")
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
