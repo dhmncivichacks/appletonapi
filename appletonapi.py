@@ -55,25 +55,42 @@ class PropertyHandler(webapp2.RequestHandler):
                 docroot = lxml.html.fromstring(urllib2.urlopen(detailurl).read())
                 tables = docroot.xpath("//table[@class='t1']")
                 for table in tables:
-                    ths = table.xpath("./tr/th")
+                    ths = table.xpath("./tr/th") #assuming single <th> per table
                     for th in ths:
-                        lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
-                        if th.text:
-                            datagroups.append(th.text.strip())
-                    datadict = {}
-                    tdcounter = 0
-                    tds = table.xpath("./tr/td")
-                    #cleanse asterisks and ampersands etc FIXME
-                    for td in tds:
-                        lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
-                        if tdcounter == 0:
-                            tdkey = td.text.strip() if td.text else ''
-                            tdcounter += 1
-                        else:
-                            tdvalue = td.text.strip() if td.text else ''
-                            tdcounter = 0
-                            datadict[tdkey] = tdvalue
-                    datagroups.append(datadict)
+                        if th is not None:
+                            lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
+                            if th.text:
+                                datagroups.append(th.text.strip())
+                                #FIXME
+                                if th.text.strip() == "Businesses":
+                                    logging.debug("found Business <th>")
+                                    tdkey = "businesses"
+                                    businesslist = []
+                                    tds = table.xpath("./tr/td")
+                                    if tds is not None:
+                                        for td in tds:
+                                            lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                            businesslist.append(td.text.strip())
+                                    logging.debug("businesslist: " + str(businesslist))
+                                datadict = {}
+                                tdcounter = 0
+                                tds = table.xpath("./tr/td")
+                                if tds is not None:
+                                    for td in tds:
+                                        lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                        if tdcounter == 0:
+                                            tdkey = td.text.strip() if td.text else ''
+                                            tdcounter += 1
+                                        else:
+                                            tdvalue = td.text.strip() if td.text else ''
+                                            tdvalue = " ".join(tdvalue.split()) #remove extra whitespace
+                                            tdcounter = 0
+                                            #when the source tr + td are commented out lxml still sees them. PREVENT!
+                                            if tdkey == '' and tdvalue == '':
+                                                break
+                                            else:
+                                                datadict[tdkey] = tdvalue
+                                    datagroups.append(datadict)
                 logging.debug("setting memcache for key: " + propkey)
                 memcache.add(str(propkey),datagroups) 
                 self.response.headers["Content-Type"] = "application/json"
@@ -152,6 +169,16 @@ class MainHandler(webapp2.RequestHandler):
 <![endif]-->
 </head>
 <body>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-168979-12', 'appletonapi.appspot.com');
+  ga('send', 'pageview');
+
+</script>
 <style>
 #forkongithub a{background:#000;color:#fff;text-decoration:none;font-family:arial, sans-serif;text-align:center;font-weight:bold;padding:5px 40px;font-size:1rem;line-height:2rem;position:relative;transition:0.5s;}
 #forkongithub a:hover{background:#060;color:#fff;}
