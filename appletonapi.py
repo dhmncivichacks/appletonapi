@@ -79,10 +79,10 @@ class PropertyHandler(webapp2.RequestHandler):
                                     for td in tds:
                                         lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
                                         if tdcounter == 0:
-                                            tdkey = td.text.strip() if td.text else ''
+                                            tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
                                             tdcounter += 1
                                         else:
-                                            tdvalue = td.text.strip() if td.text else ''
+                                            tdvalue = td.text.strip().title() if td.text else ''
                                             tdvalue = " ".join(tdvalue.split()) #remove extra whitespace
                                             tdcounter = 0
                                             #when the source tr + td are commented out lxml still sees them. PREVENT!
