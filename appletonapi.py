@@ -15,8 +15,12 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
 from google.appengine.api import memcache
+from google.appengine.api import namespace_manager
 import json
 import logging
+import lxml.etree
+import lxml.html
+import os
 import re
 import urllib
 import urllib2
@@ -24,46 +28,80 @@ import webapp2
 
 def extracttagvalues(line):
     m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
-    if m:
+    if m: 
         return re.split('value="',m.group(0))[0]
 
-def sanitizeinput(rawinput):
+def sanitizeinputwords(rawinput):
     m = re.search('^\w+$', rawinput)
     if m:
         return m.group(0)
 
 class PropertyHandler(webapp2.RequestHandler):
     def get(self,propkey):
-        p = memcache.get(sanitizeinput(propkey))   
+        #memcache namespace changes UNTESTED FIXME
+        propkey = sanitizeinputwords(propkey)
+        major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
+        namespace_manager.set_namespace(major_ver)
+        logging.debug("namespace: " + major_ver)
+        p = memcache.get(propkey)   
         if p is not None:             
+            logging.debug("from memcache: " + propkey)
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(p))
+            self.response.out.write(json.dumps(p, sort_keys=True,indent=4, separators=(',', ': ')))
         else:                         
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
-            scrapehooks =  [
-            "Garbage Day",
-            "Recycle Day"
-            ]
-            datalist = []
+            datagroups = []
             try:
-                response = urllib2.urlopen(detailurl)
-                for line in response:
-                    for h in scrapehooks:
-                        if h in line:
-                            m = re.search('(?<=</td><td>).*', line)
-                            if m:
-                                datalist.append( re.split('</td></tr>',m.group(0))[0] )
-                            if h == scrapehooks[-1]:
-                                self.response.headers["Content-Type"] = "application/json"
-                                self.response.out.write(json.dumps(datalist))
-                                memcache.add(str(propkey),datalist) 
+                docroot = lxml.html.fromstring(urllib2.urlopen(detailurl).read())
+                tables = docroot.xpath("//table[@class='t1']")
+                for table in tables:
+                    ths = table.xpath("./tr/th") #assuming single <th> per table
+                    for th in ths:
+                        if th is not None:
+                            lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
+                            if th.text:
+                                thkey = re.sub('\W', '', th.text).lower() #nospaces all lower
+                                datagroups.append(thkey)
+                                if th.text.strip() == "Businesses":
+                                    logging.debug("found Business <th>")
+                                    tdkey = "businesses"
+                                    businesslist = []
+                                    tds = table.xpath("./tr/td")
+                                    if tds is not None:
+                                        for td in tds:
+                                            lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                            businesslist.append(td.text.strip())
+                                    logging.debug("businesslist: " + str(businesslist))
+                                datadict = {}
+                                tdcounter = 0
+                                tds = table.xpath("./tr/td")
+                                if tds is not None:
+                                    for td in tds:
+                                        lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                        if tdcounter == 0:
+                                            tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
+                                            tdcounter += 1
+                                        else:
+                                            tdvalue = td.text.strip().title() if td.text else ''
+                                            tdvalue = " ".join(tdvalue.split()) #remove extra whitespace
+                                            tdcounter = 0
+                                            #when the source tr + td are commented out lxml still sees them. PREVENT!
+                                            if tdkey == '' and tdvalue == '':
+                                                break
+                                            else:
+                                                datadict[tdkey] = tdvalue
+                                    datagroups.append(datadict)
+                logging.debug("setting memcache for key: " + propkey)
+                memcache.add(str(propkey),datagroups) 
+                self.response.headers["Content-Type"] = "application/json"
+                self.response.out.write(json.dumps(datagroups, sort_keys=True,indent=4, separators=(',', ': ')))
             except urllib2.HTTPError, response:
-                self.response.out.write( 'error - Scrape',response)
+                self.response.out.write( 'error - Scrape: ' + str(response))
 
 class SearchHandler(webapp2.RequestHandler):
    def get(self):
-        housenumber = sanitizeinput(str(self.request.get('h')))
-        street = sanitizeinput(str(self.request.get('s')))
+        housenumber = sanitizeinputwords(str(self.request.get('h')))
+        street = sanitizeinputwords(str(self.request.get('s')))
         if not housenumber and not street:
             self.response.out.write('Give me *SOMETHING* to search for.')
             return
@@ -112,7 +150,7 @@ class SearchHandler(webapp2.RequestHandler):
                             allresults.append(searchresult)
 
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(allresults))
+            self.response.out.write(json.dumps(allresults, sort_keys=True,indent=4, separators=(',', ': ')))
         except urllib2.HTTPError, response:
             self.response.out.write("500 - Cannot search :(")
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
