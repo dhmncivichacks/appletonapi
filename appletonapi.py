@@ -60,8 +60,8 @@ class PropertyHandler(webapp2.RequestHandler):
                         if th is not None:
                             lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
                             if th.text:
-                                datagroups.append(th.text.strip())
-                                #FIXME
+                                thkey = re.sub('\W', '', th.text).lower() #nospaces all lower
+                                datagroups.append(thkey)
                                 if th.text.strip() == "Businesses":
                                     logging.debug("found Business <th>")
                                     tdkey = "businesses"
