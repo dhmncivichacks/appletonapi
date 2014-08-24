@@ -190,25 +190,46 @@ class MainHandler(webapp2.RequestHandler):
 <p>AppletonAPI is the humble beginning of a RESTful API for Appleton, WI civic data.</p>
 <p>All data presented by AppletonAPI is directly from <a href="http://my.appleton.org/">http://my.appleton.org/</a> and presented in a manner usable by client programmers.</p>
 <p><a href="https://github.com/mikeputnam/appletonapi">Source code available on Github.</a></p>
+
 <hr>
-<p>Current API v1.0.0:</p>
+
+<p>Current API v2.0.0:</p>
 <p>Search for a property within the city of Appleton using house number and base street name.</p>
-<ul>
-<li>GET http://1.appletonapi.appspot.com/search?h=120&amp;s=Morrison</li>
-<li>Returns a JSON result consisting of a list of possible properties given the search parameters: &amp;h = house number, &amp;s = street name.</li>
-</ul>
+
+<pre>
+    GET http://appletonapi.appspot.com/search?h=120&amp;s=Morrison</li>
+</pre>
+
+<p>Returns a JSON result consisting of a list of possible properties given the search parameters: &amp;h = house number, &amp;s = street name.</p>
+
 <p>When is garbage day? Recycling day?</p>
-<ul>
-<li>GET http://1.appletonapi.appspot.com/property/312030300</li>
-<li>Given a property, returns a JSON result: day of the week the garbage picked up, recycling picked up, and next date of pickup?</li>
-</ul>
+
+<pre>
+    GET http://appletonapi.appspot.com/property/312030300
+</pre>
+
+<p>Given a property, returns a JSON result containing the majority of data available on my.appleton.org</p>
+
 <hr>
+
 <p>Demo:</p>
 <form action="/search" method="get">
 House number: <input type="text" name="h"/><br>
 Street: <input type="text" name="s"/><br>
 <input type="submit" value="Submit">
 </form>
+
+<hr>
+
+<p>Clients dependent on previous versions of the API can continue to use those earlier versions by specifying the version number in the call.</p>
+
+<p>v1.0.0 Example calls:</p>
+
+<pre>
+    GET http://1.appletonapi.appspot.com/search?h=120&s=Morrison
+    GET http://1.appletonapi.appspot.com/property/312030300
+</pre>
+
 </body>
 </html> 
         """
