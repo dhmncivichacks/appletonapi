@@ -226,7 +226,7 @@ Street: <input type="text" name="s"/><br>
 <p>v1.0.0 Example calls:</p>
 
 <pre>
-    GET http://1.appletonapi.appspot.com/search?h=121&sDouglas=
+    GET http://1.appletonapi.appspot.com/search?h=121&amp;s=Douglas
     GET http://1.appletonapi.appspot.com/property/312030300
 </pre>
 
