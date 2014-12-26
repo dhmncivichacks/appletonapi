@@ -28,7 +28,7 @@ import webapp2
 
 def extracttagvalues(line):
     m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
-    if m: 
+    if m:
         return re.split('value="',m.group(0))[0]
 
 def sanitizeinputwords(rawinput):
@@ -43,12 +43,12 @@ class PropertyHandler(webapp2.RequestHandler):
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
         namespace_manager.set_namespace(major_ver)
         logging.debug("namespace: " + major_ver)
-        p = memcache.get(propkey)   
-        if p is not None:             
+        p = memcache.get(propkey)
+        if p is not None:
             logging.debug("from memcache: " + propkey)
             self.response.headers["Content-Type"] = "application/json"
             self.response.out.write(json.dumps(p, sort_keys=True,indent=4, separators=(',', ': ')))
-        else:                         
+        else:
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             datagroups = []
             try:
@@ -92,7 +92,7 @@ class PropertyHandler(webapp2.RequestHandler):
                                                 datadict[tdkey] = tdvalue
                                     datagroups.append(datadict)
                 logging.debug("setting memcache for key: " + propkey)
-                memcache.add(str(propkey),datagroups) 
+                memcache.add(str(propkey),datagroups)
                 self.response.headers["Content-Type"] = "application/json"
                 self.response.out.write(json.dumps(datagroups, sort_keys=True,indent=4, separators=(',', ': ')))
             except urllib2.HTTPError, response:
@@ -144,7 +144,7 @@ class SearchHandler(webapp2.RequestHandler):
                                 # this removes whitespace and Title Cases the address
                                 # given: <td>1200</td><td>W WISCONSIN    AVE </td>
                                 # returns: ['1200', 'W Wisconsin Ave']
-                                address = [' '.join(t.split()).strip().title() for t in m] 
+                                address = [' '.join(t.split()).strip().title() for t in m]
                                 searchresult.append(address[0])
                                 searchresult.append(address[1])
                             allresults.append(searchresult)
@@ -157,7 +157,7 @@ class SearchHandler(webapp2.RequestHandler):
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        indexhtml = """ 
+        indexhtml = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -231,7 +231,7 @@ Street: <input type="text" name="s"/><br>
 </pre>
 
 </body>
-</html> 
+</html>
         """
         self.response.out.write(indexhtml)
 app = webapp2.WSGIApplication(
