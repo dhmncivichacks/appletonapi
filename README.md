@@ -11,7 +11,7 @@ Current API v2.0.0:
 
 Search for a property within the city of Appleton using house number and base street name.
 
-    GET http://appletonapi.appspot.com/search?h=120&s=Morrison
+    GET http://appletonapi.appspot.com/search?h=121&s=Douglas
     Returns a JSON result consisting of a list of possible properties given the search parameters: &h = house number, &s = street name.
 
 When is garbage day? Recycling day?
@@ -23,5 +23,5 @@ Clients dependent on previous versions of the API can continue to use those earl
 
 v1.0.0 Example calls:
 
-    GET http://1.appletonapi.appspot.com/search?h=120&s=Morrison
+    GET http://1.appletonapi.appspot.com/search?h=121&s=Douglas
     GET http://1.appletonapi.appspot.com/property/312030300
