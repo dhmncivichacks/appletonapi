@@ -205,7 +205,7 @@ class MainHandler(webapp2.RequestHandler):
 <p>When is garbage day? Recycling day?</p>
 
 <pre>
-    GET http://appletonapi.appspot.com/property/312030300
+    GET http://appletonapi.appspot.com/property/315173204
 </pre>
 
 <p>Given a property, returns a JSON result containing the majority of data available on my.appleton.org</p>
@@ -227,7 +227,7 @@ Street: <input type="text" name="s"/><br>
 
 <pre>
     GET http://1.appletonapi.appspot.com/search?h=121&amp;s=Douglas
-    GET http://1.appletonapi.appspot.com/property/312030300
+    GET http://1.appletonapi.appspot.com/property/315173204
 </pre>
 
 </body>
