@@ -197,7 +197,7 @@ class MainHandler(webapp2.RequestHandler):
 <p>Search for a property within the city of Appleton using house number and base street name.</p>
 
 <pre>
-    GET http://appletonapi.appspot.com/search?h=120&amp;s=Morrison</li>
+    GET http://appletonapi.appspot.com/search?h=121&amp;s=Douglas</li>
 </pre>
 
 <p>Returns a JSON result consisting of a list of possible properties given the search parameters: &amp;h = house number, &amp;s = street name.</p>
@@ -226,7 +226,7 @@ Street: <input type="text" name="s"/><br>
 <p>v1.0.0 Example calls:</p>
 
 <pre>
-    GET http://1.appletonapi.appspot.com/search?h=120&s=Morrison
+    GET http://1.appletonapi.appspot.com/search?h=121&sDouglas=
     GET http://1.appletonapi.appspot.com/property/312030300
 </pre>
 
