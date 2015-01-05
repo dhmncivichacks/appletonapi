@@ -108,9 +108,9 @@ class SearchHandler(webapp2.RequestHandler):
         try:
             response = urllib2.urlopen('http://my.appleton.org/')
             for line in response:
-                if "__VIEWSTATE" in line:
+                if "__VIEWSTATE\"" in line:
                     vs = extracttagvalues(line)
-                if "__EVENTVALIDATION" in line:
+                if "__EVENTVALIDATION\"" in line:
                     ev = extracttagvalues(line)
                     formvalues = {
                         '__EVENTTARGET' : '',
@@ -151,8 +151,8 @@ class SearchHandler(webapp2.RequestHandler):
 
             self.response.headers["Content-Type"] = "application/json"
             self.response.out.write(json.dumps(allresults, sort_keys=True,indent=4, separators=(',', ': ')))
-        except urllib2.HTTPError, response:
-            self.response.out.write("500 - Cannot search :(")
+        except urllib2.URLError, e:
+            self.response.out.write("Cannot search :( <br/>" + str(e))
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
 
 class MainHandler(webapp2.RequestHandler):
