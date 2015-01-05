@@ -1,5 +1,5 @@
 """
-Copyright (c) 2013 Mike Putnam <mike@theputnams.net>
+Copyright (c) 2015 Mike Putnam <mike@theputnams.net>
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
