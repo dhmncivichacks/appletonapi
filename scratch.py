@@ -30,6 +30,16 @@ days_until_next_recycling_date = next_recycling_date - date.today()
 days_until_next_pickup = days_until_next_recycling_date.days - 7
 
 if days_until_next_recycling_date.days < 7:
-    print ("RECYCLING WEEK. PICKUP IN %i DAYS." % days_until_next_pickup)
+    if days_until_next_pickup > 1:
+        print ("RECYCLING WEEK. PICKUP IN %i DAYS." % days_until_next_pickup)
+    elif days_until_next_pickup == 1:
+        print ("RECYCLING WEEK. PICKUP TOMORROW.")
+    else:
+        print ("RECYCLING WEEK. PICKUP TODAY.")
 else:
-    print ("GARBAGE ONLY WEEK. PICKUP IN %i DAYS." % days_until_next_pickup)
+    if days_until_next_pickup > 1:
+        print ("GARBAGE ONLY WEEK. PICKUP IN %i DAYS." % days_until_next_pickup)
+    elif days_until_next_pickup == 1:
+        print ("GARBAGE ONLY WEEK. PICKUP TOMORROW.")
+    else:
+        print ("GARBAGE ONLY WEEK. PICKUP TODAY.")
