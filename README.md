@@ -1,4 +1,4 @@
-appletonapi
+AppletonAPI
 ===========
 
 [AppletonAPI](http://appletonapi.appspot.com/) is the humble beginning of a RESTful API for Appleton, WI civic data.
@@ -74,7 +74,7 @@ Search for a property within the city of Appleton using house number and base st
 
 **Returns**: JSON result containing the majority of data available on my.appleton.org for that property.
 
-**Example**: http://appletonapi.appspot.com/property/315173204 (property key for the Appleton Makerspace(http://appletonmakerspace.org))
+**Example**: http://appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
 
 ```
 [
