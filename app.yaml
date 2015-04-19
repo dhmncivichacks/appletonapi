@@ -2,7 +2,7 @@ application: appletonapi
 version: 2-0
 runtime: python27
 api_version: 1
-threadsafe: true 
+threadsafe: true
 
 handlers:
 - url: /favicon\.ico
@@ -14,5 +14,4 @@ handlers:
 libraries:
 - name: lxml
   version: latest
-
 
