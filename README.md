@@ -7,6 +7,10 @@ All data presented by AppletonAPI is directly from http://my.appleton.org/ and p
 
 The API itself is running on [Google App Engine](https://developers.google.com/appengine/) .
 
+## Known Clients
+
+* [Is it recycling week?](https://github.com/mikeputnam/isitrecyclingweek) is an Android app that allows you to lookup the recycling pickup schedule for the current week.
+
 ## API v2.0.0 (current)
 
 #### Search
