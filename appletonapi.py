@@ -16,6 +16,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
+from google.appengine.api import urlfetch
 import json
 import logging
 import lxml.etree
@@ -25,20 +26,26 @@ import re
 import urllib
 import urllib2
 import webapp2
+from datetime import datetime, timedelta
+
+DATE_FORMAT = "%Y-%m-%d"
+
 
 def extracttagvalues(line):
     m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
     if m:
-        return re.split('value="',m.group(0))[0]
+        return re.split('value="', m.group(0))[0]
+
 
 def sanitizeinputwords(rawinput):
     m = re.search('^\w+$', rawinput)
     if m:
         return m.group(0)
 
+
 class PropertyHandler(webapp2.RequestHandler):
-    def get(self,propkey):
-        #memcache namespace changes UNTESTED FIXME
+    def get(self, propkey):
+        # memcache namespace changes UNTESTED FIXME
         propkey = sanitizeinputwords(propkey)
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
         namespace_manager.set_namespace(major_ver)
@@ -47,7 +54,7 @@ class PropertyHandler(webapp2.RequestHandler):
         if p is not None:
             logging.debug("from memcache: " + propkey)
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(p, sort_keys=True,indent=4, separators=(',', ': ')))
+            self.response.out.write(json.dumps(p, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             datagroups = []
@@ -55,12 +62,12 @@ class PropertyHandler(webapp2.RequestHandler):
                 docroot = lxml.html.fromstring(urllib2.urlopen(detailurl).read())
                 tables = docroot.xpath("//table[@class='t1']")
                 for table in tables:
-                    ths = table.xpath("./tr/th") #assuming single <th> per table
+                    ths = table.xpath("./tr/th")  # assuming single <th> per table
                     for th in ths:
                         if th is not None:
                             lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
                             if th.text:
-                                thkey = re.sub('\W', '', th.text).lower() #nospaces all lower
+                                thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
                                 datagroups.append(thkey)
                                 if th.text.strip() == "Businesses":
                                     logging.debug("found Business <th>")
@@ -83,23 +90,24 @@ class PropertyHandler(webapp2.RequestHandler):
                                             tdcounter += 1
                                         else:
                                             tdvalue = td.text.strip().title() if td.text else ''
-                                            tdvalue = " ".join(tdvalue.split()) #remove extra whitespace
+                                            tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
                                             tdcounter = 0
-                                            #when the source tr + td are commented out lxml still sees them. PREVENT!
+                                            # when the source tr + td are commented out lxml still sees them. PREVENT!
                                             if tdkey == '' and tdvalue == '':
                                                 break
                                             else:
                                                 datadict[tdkey] = tdvalue
                                     datagroups.append(datadict)
                 logging.debug("setting memcache for key: " + propkey)
-                memcache.add(str(propkey),datagroups)
+                memcache.add(str(propkey), datagroups)
                 self.response.headers["Content-Type"] = "application/json"
-                self.response.out.write(json.dumps(datagroups, sort_keys=True,indent=4, separators=(',', ': ')))
+                self.response.out.write(json.dumps(datagroups, sort_keys=True, indent=4, separators=(',', ': ')))
             except urllib2.HTTPError, response:
-                self.response.out.write( 'error - Scrape: ' + str(response))
+                self.response.out.write('error - Scrape: ' + str(response))
+
 
 class SearchHandler(webapp2.RequestHandler):
-   def get(self):
+    def get(self):
         housenumber = sanitizeinputwords(str(self.request.get('h')))
         street = sanitizeinputwords(str(self.request.get('s')))
         if not housenumber and not street:
@@ -113,32 +121,32 @@ class SearchHandler(webapp2.RequestHandler):
                 if "__EVENTVALIDATION\"" in line:
                     ev = extracttagvalues(line)
                     formvalues = {
-                        '__EVENTTARGET' : '',
-                        '__EVENTARGUMENT' : '',
-                        '__VIEWSTATE' : vs,
-                        '__EVENTVALIDATION' : ev,
-                        'ctl00$myappletonContent$txtStreetNumber' : housenumber,
-                        'ctl00$myappletonContent$txtStreetName' : street,
-                        'ctl00$myappletonContent$btnSubmit':'Submit'}
+                        '__EVENTTARGET': '',
+                        '__EVENTARGUMENT': '',
+                        '__VIEWSTATE': vs,
+                        '__EVENTVALIDATION': ev,
+                        'ctl00$myappletonContent$txtStreetNumber': housenumber,
+                        'ctl00$myappletonContent$txtStreetName': street,
+                        'ctl00$myappletonContent$btnSubmit': 'Submit'}
                     headers = {
-                        'User-Agent':str(self.request.headers['User-Agent']),
-                        'Referer':'http://my.appleton.org/default.aspx',
-                        'Accept':'text/html,application/xhtml+xml,application/xml'
-                        }
+                        'User-Agent': str(self.request.headers['User-Agent']),
+                        'Referer': 'http://my.appleton.org/default.aspx',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml'
+                    }
                     data = urllib.urlencode(formvalues)
-                    req = urllib2.Request("http://my.appleton.org/default.aspx",data, headers)
+                    req = urllib2.Request("http://my.appleton.org/default.aspx", data, headers)
                     response = urllib2.urlopen(req)
                     allresults = []
-                    #Example of the HTML returned...
-                    #<a id="ctl00_myappletonContent_searchResults_ctl03_PropKey"
-                    #href="Propdetail.aspx?PropKey=312039300&amp;Num=100">312039300  </a>
+                    # Example of the HTML returned...
+                    # <a id="ctl00_myappletonContent_searchResults_ctl03_PropKey"
+                    # href="Propdetail.aspx?PropKey=312039300&amp;Num=100">312039300  </a>
                     #                  </td><td>100</td><td>E WASHINGTON           ST  </td>
                     for pline in response:
                         if "Propdetail.aspx?PropKey=" in pline:
                             searchresult = []
                             m = re.search('(?<=PropKey\=).*(?=&)', pline)
                             if m:
-                                searchresult.append( re.split('PropKey=',m.group(0))[0] )
+                                searchresult.append(re.split('PropKey=', m.group(0))[0])
                             m = re.findall('(?s)<td>(.*?)</td>', response.next())
                             if m:
                                 # this removes whitespace and Title Cases the address
@@ -155,10 +163,43 @@ class SearchHandler(webapp2.RequestHandler):
                             allresults.append(searchresult)
 
             self.response.headers["Content-Type"] = "application/json"
-            self.response.out.write(json.dumps(allresults, sort_keys=True,indent=4, separators=(',', ': ')))
+            self.response.out.write(json.dumps(allresults, sort_keys=True, indent=4, separators=(',', ': ')))
         except urllib2.URLError, e:
             self.response.out.write("Cannot search :( <br/>" + str(e))
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
+
+
+class CrimesHandler(webapp2.RequestHandler):
+    def get(self):
+        start_date = self.request.get('start_date',
+                                      default_value=(datetime.now() - timedelta(days=7)).strftime(DATE_FORMAT))
+        end_date = self.request.get('end_date', default_value=datetime.now().strftime(DATE_FORMAT))
+        allresults = []
+        for x in range(2):
+            # Rows and Columns are based on Google Map tiles of the Appleton area
+            row = 2970 + x
+            for y in range(1, 8):
+                column = 2080 + y
+                url = 'https://www.crimereports.com/v3/crime_reports/map/search_by_tile.json?org_ids={0}' \
+                      '&include_sex_offenders={1}' \
+                      '&incident_type_ids={2}' \
+                      '&start_date={3}' \
+                      '&end_date={4}' \
+                      '&zoom={5}' \
+                      '&row={6}' \
+                      '&column={7}'.format(83558,
+                                           'false',
+                                           '8,9,10,11,12,14,97,98,99,100,101,103,148,149,151,160,163,165,166,167,169,171,172,180,168,121,162,164,179,178,150,173,161,104',
+                                           start_date,
+                                           end_date,
+                                           13,
+                                           row,
+                                           column)
+                result = urlfetch.fetch(url, deadline=10)
+                allresults += json.loads(result.content)['crimes']
+        self.response.headers["Content-Type"] = "application/json"
+        self.response.out.write(json.dumps(allresults, sort_keys=True, indent=4, separators=(',', ': ')))
+
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
@@ -215,6 +256,12 @@ class MainHandler(webapp2.RequestHandler):
 
 <p>Given a property, returns a JSON result containing the majority of data available on my.appleton.org</p>
 
+<p>Get the crimes committed in the past 7 days. Optionally specify start_date and end_date for more data.<p>
+
+<pre>
+    GET http://appletonapi.appspot.com/crimes
+</pre>
+
 <hr>
 
 <p>Demo:</p>
@@ -239,18 +286,22 @@ Street: <input type="text" name="s"/><br>
 </html>
         """
         self.response.out.write(indexhtml)
+
+
 app = webapp2.WSGIApplication(
     [
         ('/', MainHandler),
         (r'/property/(\d+)', PropertyHandler),
-        ('/search', SearchHandler)
+        ('/search', SearchHandler),
+        ('/crimes', CrimesHandler)
     ], debug=True)
+
 
 def main():
     # Set the logging level in the main function
     logging.getLogger().setLevel(logging.DEBUG)
     webapp.util.run_wsgi_app(app)
 
+
 if __name__ == '__main__':
     main()
-
