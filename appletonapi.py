@@ -145,8 +145,13 @@ class SearchHandler(webapp2.RequestHandler):
                                 # given: <td>1200</td><td>W WISCONSIN    AVE </td>
                                 # returns: ['1200', 'W Wisconsin Ave']
                                 address = [' '.join(t.split()).strip().title() for t in m]
-                                searchresult.append(address[0])
-                                searchresult.append(address[1])
+                                searchresult.append(address[0]) #Number
+                                # Thank you Dan Gabrielson <dan.gabrielson@gmail.com> and Matt Everson https://github.com/matteverson
+                                # for your help at 2015 Appleton Civic Hackathon! This closes https://github.com/mikeputnam/appletonapi/issues/5
+                                label = ' '
+                                for chunk in address[1:]:
+                                    label += chunk + ' '
+                                searchresult.append(label.strip())
                             allresults.append(searchresult)
 
             self.response.headers["Content-Type"] = "application/json"
