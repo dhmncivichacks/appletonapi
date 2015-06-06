@@ -146,7 +146,10 @@ class SearchHandler(webapp2.RequestHandler):
                                 # returns: ['1200', 'W Wisconsin Ave']
                                 address = [' '.join(t.split()).strip().title() for t in m]
                                 searchresult.append(address[0])
-                                searchresult.append(address[1])
+                                if address[1]:
+                                    searchresult.append(address[1])
+                                else:
+                                    searchresult.append(address[2])
                             allresults.append(searchresult)
 
             self.response.headers["Content-Type"] = "application/json"
