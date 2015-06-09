@@ -19,6 +19,7 @@ from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
 from streetaddress import StreetAddressFormatter, StreetAddressParser
+import inflect
 import json
 import logging
 import lxml.etree
@@ -30,6 +31,10 @@ import urllib2
 import webapp2
 
 DATE_FORMAT = "%Y-%m-%d"
+
+_digits = re.compile('\d')
+def contains_digits(d):
+    return bool(_digits.search(d))
 
 
 def extracttagvalues(line):
@@ -114,7 +119,12 @@ class SearchHandler(webapp2.RequestHandler):
         addr_parser = StreetAddressParser()
         addr = addr_parser.parse(search_input)
         housenumber = addr['house']
-        street = addr['street_name']
+        # Handle upstream requirement of "Fifth" not "5th"
+        p = inflect.engine()
+        if contains_digits(addr['street_name']):
+            street = p.number_to_words(addr['street_name'])
+        else:
+            street = addr['street_name']
 
         if not housenumber and not street:
             self.response.out.write('Give me *SOMETHING* to search for.')
