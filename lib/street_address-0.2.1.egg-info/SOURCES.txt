@@ -1,0 +1,11 @@
+MANIFEST.in
+setup.cfg
+setup.py
+street_address.egg-info/PKG-INFO
+street_address.egg-info/SOURCES.txt
+street_address.egg-info/dependency_links.txt
+street_address.egg-info/top_level.txt
+streetaddress/__init__.py
+streetaddress/streetaddress.py
+tests/cmdline_street_address.py
+tests/test_street_address.py

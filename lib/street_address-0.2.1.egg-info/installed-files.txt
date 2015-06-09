@@ -1,0 +1,9 @@
+../streetaddress/streetaddress.py
+../streetaddress/__init__.py
+../streetaddress/streetaddress.pyc
+../streetaddress/__init__.pyc
+./
+SOURCES.txt
+dependency_links.txt
+top_level.txt
+PKG-INFO

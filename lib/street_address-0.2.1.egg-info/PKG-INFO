@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: street-address
+Version: 0.2.1
+Summary: Street address parser and formatter
+Home-page: https://github.com/pnpnpn/street-address
+Author: PN
+Author-email: pn.appdev@gmail.com
+License: UNKNOWN
+Description: Street address parser and formatter
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

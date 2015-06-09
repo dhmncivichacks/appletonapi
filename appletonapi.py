@@ -14,9 +14,11 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
+from datetime import datetime, timedelta
 from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
+from streetaddress import StreetAddressFormatter, StreetAddressParser
 import json
 import logging
 import lxml.etree
@@ -26,7 +28,6 @@ import re
 import urllib
 import urllib2
 import webapp2
-from datetime import datetime, timedelta
 
 DATE_FORMAT = "%Y-%m-%d"
 
@@ -45,7 +46,6 @@ def sanitizeinputwords(rawinput):
 
 class PropertyHandler(webapp2.RequestHandler):
     def get(self, propkey):
-        # memcache namespace changes UNTESTED FIXME
         propkey = sanitizeinputwords(propkey)
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
         namespace_manager.set_namespace(major_ver)
@@ -110,8 +110,12 @@ class PropertyHandler(webapp2.RequestHandler):
 
 class SearchHandler(webapp2.RequestHandler):
     def get(self):
-        housenumber = sanitizeinputwords(str(self.request.get('h')))
-        street = sanitizeinputwords(str(self.request.get('s')))
+        search_input = self.request.get('q')
+        addr_parser = StreetAddressParser()
+        addr = addr_parser.parse(search_input)
+        housenumber = addr['house']
+        street = addr['street_name']
+
         if not housenumber and not street:
             self.response.out.write('Give me *SOMETHING* to search for.')
             return
