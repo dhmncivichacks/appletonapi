@@ -9,7 +9,12 @@ The API itself is running on [Google App Engine](https://developers.google.com/a
 
 ## Known Clients
 
-* [Is it recycling week?](https://github.com/mikeputnam/isitrecyclingweek) is an Android app that allows you to lookup the recycling pickup schedule for the current week.
+Apps that allow you to lookup recycling pickup schedule for the current week:
+
+* [Is it recycling week?](https://github.com/mikeputnam/isitrecyclingweek) - Android app
+* [AppletonPebble](https://github.com/zo0o0ot/AppletonPebble) - Pebble app
+* [Is it recycling week in Appleton?](https://github.com/dhmncivichacks/isitrecycling) - web app
+* [Civic Hack API Locator](https://github.com/mrosack/civic-hack-api-locator) - Not a client, but an API discovery/contract project to which AppletonAPI will attempt to adhere to
 
 ## API v2.0.0 (current)
 
