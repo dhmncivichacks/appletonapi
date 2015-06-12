@@ -1,5 +1,5 @@
 application: appletonapi
-version: 2-2
+version: 3-0
 runtime: python27
 api_version: 1
 threadsafe: true

@@ -16,61 +16,36 @@ Apps that allow you to lookup recycling pickup schedule for the current week:
 * [Is it recycling week in Appleton?](https://github.com/dhmncivichacks/isitrecycling) - web app
 * [Civic Hack API Locator](https://github.com/mrosack/civic-hack-api-locator) - Not a client, but an API discovery/contract project to which AppletonAPI will attempt to adhere to
 
-## API v2.0.0 (current)
+## API v3.0.0 (current)
 
 #### Search
 
 Search for a property within the city of Appleton using house number and base street name.
 
-    GET /search?h={house number}&s={street name}
+    GET /search?q={street address}
 
-**Requires**: Search parameters: &h = house number, &s = street name.
+**Requires**: Search parameter: &q = Address without cardinal direction (example: no E or East)
 
 **Returns**: JSON result consisting of a list of possible property ids.
 
-**Example**: http://appletonapi.appspot.com/search?h=100&s=Appleton (street address for Appleton City Hall)
+**Example**: http://3-0.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
 
 ```
 [
     [
-        "312027350",
-        "100",
-        ""
+        "315173204",
+        "121",
+        "N Douglas St"
     ],
     [
-        "316035700",
-        "1002",
-        ""
+        "315173204",
+        "121",
+        "N Douglas St B"
     ],
     [
-        "316012500",
-        "1003",
-        ""
-    ],
-    [
-        "316012500",
-        "1003",
-        ""
-    ],
-    [
-        "316012500",
-        "1003",
-        ""
-    ],
-    [
-        "316035800",
-        "1008",
-        ""
-    ],
-    [
-        "316012600",
-        "1009",
-        ""
-    ],
-    [
-        "316012600",
-        "1009",
-        "1/2"
+        "315173204",
+        "121",
+        "N Douglas St R"
     ]
 ]
 ```
@@ -83,7 +58,7 @@ Search for a property within the city of Appleton using house number and base st
 
 **Returns**: JSON result containing the majority of data available on my.appleton.org for that property.
 
-**Example**: http://appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
+**Example**: http://3-0.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
 
 ```
 [
@@ -194,12 +169,19 @@ Search for a property within the city of Appleton using house number and base st
     }
 ]
 ```
+## Deprecated API versions.
 
-## API v1.0.0
+In order to reduce client breakage due to changes in the API, it is best to define the API version number in your calls. This way you will have time to refactor your client to work with new API changes.
 
-Clients dependent on previous versions of the API can continue to use those earlier versions by specifying the version number in the call.
+Clients dependent on previous versions of the API can continue to use those earlier versions for a time. However, these will be removed at some point -- best to use the latest version.
 
-v1.0.0 Example calls:
+API v2.2.0 Example calls:
+
+    GET http://2-2.appletonapi.appspot.com/search?h=121&s=Douglas
+    GET http://2-2.appletonapi.appspot.com/property/315173204
+
+
+API v1.0.0 Example calls:
 
     GET http://1.appletonapi.appspot.com/search?h=121&s=Douglas
     GET http://1.appletonapi.appspot.com/property/315173204
