@@ -116,8 +116,11 @@ class PropertyHandler(webapp2.RequestHandler):
 class SearchHandler(webapp2.RequestHandler):
     def get(self):
         search_input = self.request.get('q')
+        # Google maps geolocation appends 'USA' but the address parser can't cope
+        search_input = search_input.replace('USA','')
         addr = streetaddress.parse(search_input)
         if addr is None:
+            # Since we are so tightly coupled with Appleton data, let's just pacify the address parser
             addr = streetaddress.parse(search_input + ' Appleton, WI')
         housenumber = addr['number']
         # Handle upstream requirement of "Fifth" not "5th"
