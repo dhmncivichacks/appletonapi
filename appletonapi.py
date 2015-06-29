@@ -18,7 +18,6 @@ from datetime import datetime, timedelta
 from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
-from streetaddress import StreetAddressFormatter, StreetAddressParser
 import inflect
 import json
 import logging
@@ -26,6 +25,7 @@ import lxml.etree
 import lxml.html
 import os
 import re
+import streetaddress
 import urllib
 import urllib2
 import webapp2
@@ -116,15 +116,19 @@ class PropertyHandler(webapp2.RequestHandler):
 class SearchHandler(webapp2.RequestHandler):
     def get(self):
         search_input = self.request.get('q')
-        addr_parser = StreetAddressParser()
-        addr = addr_parser.parse(search_input)
-        housenumber = addr['house']
+        # Google maps geolocation appends 'USA' but the address parser can't cope
+        search_input = search_input.replace('USA','')
+        addr = streetaddress.parse(search_input)
+        if addr is None:
+            # Since we are so tightly coupled with Appleton data, let's just pacify the address parser
+            addr = streetaddress.parse(search_input + ' Appleton, WI')
+        housenumber = addr['number']
         # Handle upstream requirement of "Fifth" not "5th"
         p = inflect.engine()
-        if contains_digits(addr['street_name']):
-            street = p.number_to_words(addr['street_name'])
+        if contains_digits(addr['street']):
+            street = p.number_to_words(addr['street'])
         else:
-            street = addr['street_name']
+            street = addr['street']
 
         if not housenumber and not street:
             self.response.out.write('Give me *SOMETHING* to search for.')
