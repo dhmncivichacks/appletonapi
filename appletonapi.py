@@ -237,73 +237,9 @@ class MainHandler(webapp2.RequestHandler):
 <![endif]-->
 </head>
 <body>
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-168979-12', 'appletonapi.appspot.com');
-  ga('send', 'pageview');
-
-</script>
-<style>
-#forkongithub a{background:#000;color:#fff;text-decoration:none;font-family:arial, sans-serif;text-align:center;font-weight:bold;padding:5px 40px;font-size:1rem;line-height:2rem;position:relative;transition:0.5s;}
-#forkongithub a:hover{background:#060;color:#fff;}
-#forkongithub a::before,#forkongithub a::after{content:"";width:100%;display:block;position:absolute;top:1px;left:0;height:1px;background:#fff;}
-#forkongithub a::after{bottom:1px;top:auto;}@media screen and (min-width:800px){#forkongithub{position:absolute;display:block;top:0;right:0;width:200px;overflow:hidden;height:200px;}
-#forkongithub a{width:200px;position:absolute;top:60px;right:-60px;transform:rotate(45deg);-webkit-transform:rotate(45deg);box-shadow:4px 4px 10px rgba(0,0,0,0.8);}}
-</style>
-<span id="forkongithub"><a href="https://github.com/mikeputnam/appletonapi">Fork me on GitHub</a></span>
 <p>AppletonAPI is the humble beginning of a RESTful API for Appleton, WI civic data.</p>
 <p>All data presented by AppletonAPI is directly from <a href="http://my.appleton.org/">http://my.appleton.org/</a> and presented in a manner usable by client programmers.</p>
-<p><a href="https://github.com/mikeputnam/appletonapi">Source code available on Github.</a></p>
-
-<hr>
-
-<p>Current API v2.0.0:</p>
-<p>Search for a property within the city of Appleton using house number and base street name.</p>
-
-<pre>
-    GET http://appletonapi.appspot.com/search?h=121&amp;s=Douglas</li>
-</pre>
-
-<p>Returns a JSON result consisting of a list of possible properties given the search parameters: &amp;h = house number, &amp;s = street name.</p>
-
-<p>When is garbage day? Recycling day?</p>
-
-<pre>
-    GET http://appletonapi.appspot.com/property/315173204
-</pre>
-
-<p>Given a property, returns a JSON result containing the majority of data available on my.appleton.org</p>
-
-<p>Get the crimes committed in the past 7 days. Optionally specify start_date and end_date for more data.<p>
-
-<pre>
-    GET http://appletonapi.appspot.com/crimes
-</pre>
-
-<hr>
-
-<p>Demo:</p>
-<form action="/search" method="get">
-House number: <input type="text" name="h"/><br>
-Street: <input type="text" name="s"/><br>
-<input type="submit" value="Submit">
-</form>
-
-<hr>
-
-<p>Clients dependent on previous versions of the API can continue to use those earlier versions by specifying the version number in the call.</p>
-
-<p>v1.0.0 Example calls:</p>
-
-<pre>
-    GET http://1.appletonapi.appspot.com/search?h=121&amp;s=Douglas
-    GET http://1.appletonapi.appspot.com/property/315173204
-</pre>
-
+<p><a href="https://github.com/mikeputnam/appletonapi">Documentation and source code available on Github.</a></p>
 </body>
 </html>
         """
