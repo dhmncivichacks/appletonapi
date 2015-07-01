@@ -20,11 +20,11 @@ Apps that allow you to lookup recycling pickup schedule for the current week:
 
 #### Search
 
-Search for a property within the city of Appleton using house number and base street name.
+Search for a property within the city of Appleton using the street address.
 
     GET /search?q={street address}
 
-**Requires**: Search parameter: &q = Address without cardinal direction (example: no E or East)
+**Requires**: Search parameter: &q = Street address
 
 **Returns**: JSON result consisting of a list of possible property ids.
 
