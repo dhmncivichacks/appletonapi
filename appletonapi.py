@@ -51,6 +51,16 @@ def sanitizeinputwords(rawinput):
 
 class PropertyHandler(webapp2.RequestHandler):
     def get(self, propkey):
+        result = self.execute(propkey)
+
+        if result.has_key('error'):
+            self.response.out.write(result['error'])
+        else:
+            self.response.headers["Content-Type"] = "application/json"
+            self.response.headers["Access-Control-Allow-Origin"] = "*"
+            self.response.out.write(json.dumps(result['propdetail'], sort_keys=True, indent=4, separators=(',', ': ')))
+    
+    def execute(self, propkey):
         propkey = sanitizeinputwords(propkey)
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
         namespace_manager.set_namespace(major_ver)
@@ -58,9 +68,7 @@ class PropertyHandler(webapp2.RequestHandler):
         p = memcache.get(propkey)
         if p is not None:
             logging.debug("from memcache: " + propkey)
-            self.response.headers["Content-Type"] = "application/json"
-            self.response.headers["Access-Control-Allow-Origin"] = "*"
-            self.response.out.write(json.dumps(p, sort_keys=True, indent=4, separators=(',', ': ')))
+            return { 'propdetail' : p }
         else:
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             datagroups = []
@@ -106,16 +114,23 @@ class PropertyHandler(webapp2.RequestHandler):
                                     datagroups.append(datadict)
                 logging.debug("setting memcache for key: " + propkey)
                 memcache.add(str(propkey), datagroups)
-                self.response.headers["Content-Type"] = "application/json"
-                self.response.headers["Access-Control-Allow-Origin"] = "*"
-                self.response.out.write(json.dumps(datagroups, sort_keys=True, indent=4, separators=(',', ': ')))
+                return { 'propdetail' : datagroups }
             except urllib2.HTTPError, response:
-                self.response.out.write('error - Scrape: ' + str(response))
+                return { 'error' : 'error - Scrape: ' + str(response) }
 
 
 class SearchHandler(webapp2.RequestHandler):
     def get(self):
-        search_input = self.request.get('q')
+        result = self.execute(self.request.get('q'), str(self.request.headers['User-Agent']))
+
+        if result.has_key('error'):
+            self.response.out.write(result['error'])
+        else:
+            self.response.headers["Content-Type"] = "application/json"
+            self.response.headers["Access-Control-Allow-Origin"] = "*"
+            self.response.out.write(json.dumps(result['allresults'], sort_keys=True, indent=4, separators=(',', ': ')))
+
+    def execute(self, search_input, user_agent):
         # Google maps geolocation appends 'USA' but the address parser can't cope
         search_input = search_input.replace('USA','')
         addr = streetaddress.parse(search_input)
@@ -131,8 +146,8 @@ class SearchHandler(webapp2.RequestHandler):
             street = addr['street']
 
         if not housenumber and not street:
-            self.response.out.write('Give me *SOMETHING* to search for.')
-            return
+            return { 'error' : 'Give me *SOMETHING* to search for.'}
+
         try:
             response = urllib2.urlopen('http://my.appleton.org/')
             for line in response:
@@ -149,7 +164,7 @@ class SearchHandler(webapp2.RequestHandler):
                         'ctl00$myappletonContent$txtStreetName': street,
                         'ctl00$myappletonContent$btnSubmit': 'Submit'}
                     headers = {
-                        'User-Agent': str(self.request.headers['User-Agent']),
+                        'User-Agent': user_agent,
                         'Referer': 'http://my.appleton.org/default.aspx',
                         'Accept': 'text/html,application/xhtml+xml,application/xml'
                     }
@@ -182,12 +197,63 @@ class SearchHandler(webapp2.RequestHandler):
                                 searchresult.append(label.strip())
                             allresults.append(searchresult)
 
-            self.response.headers["Content-Type"] = "application/json"
-            self.response.headers["Access-Control-Allow-Origin"] = "*"
-            self.response.out.write(json.dumps(allresults, sort_keys=True, indent=4, separators=(',', ': ')))
+            return { 'allresults' : allresults }
         except urllib2.URLError, e:
-            self.response.out.write("Cannot search :( <br/>" + str(e))
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
+            return { 'error' : "Cannot search :( <br/>" + str(e) }
+
+
+class GarbageCollectionHandler(webapp2.RequestHandler):
+    def get(self):
+        search_handler = SearchHandler()
+        search_result = search_handler.execute(self.request.get('addr'), str(self.request.headers['User-Agent']))
+        
+        if search_result.has_key('error'):
+            self.response.out.write(search_result['error'])
+            return
+           
+        result = []
+        if len(search_result['allresults']) > 0:
+            prop_handler = PropertyHandler()
+            prop_result = prop_handler.execute(search_result['allresults'][0][0])
+            if prop_result.has_key('error'):
+                self.response.out.write(prop_result['error'])
+                return
+
+            garbage_day = prop_result['propdetail'][1]['garbageday']
+            recycling_day = prop_result['propdetail'][1]['recycleday']
+            split_recycling_day = recycling_day.split(',')
+            found_recycling = False
+            cur_date = datetime.now()
+            failsafe_count = 0
+
+            while not found_recycling and failsafe_count < 21:
+                today_string = cur_date.strftime('%Y-%m-%d')
+                
+                if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
+                    result.append( { 'collectionType' : 'trash', 'collectionDate' : today_string } )
+                
+                if cur_date.strftime('%m-%d-%Y') == split_recycling_day[1].strip():
+                    result.append( { 'collectionType' : 'recycling', 'collectionDate' : today_string } )
+                    found_recycling = True
+                    
+                cur_date += timedelta(days=1)
+                failsafe_count += 1
+
+        self.response.headers["Content-Type"] = "application/json"
+        self.response.headers["Access-Control-Allow-Origin"] = "*"
+        self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+
+    def day_of_week_string_to_int(self, string_day):
+        return {
+            'Monday' : 0,
+            'Tuesday' : 1,
+            'Wednesday' : 2,
+            'Thursday' : 3,
+            'Friday' : 4,
+            'Saturday' : 5,
+            'Sunday' : 6
+        }[string_day]
 
 
 class CrimesHandler(webapp2.RequestHandler):
@@ -251,7 +317,8 @@ app = webapp2.WSGIApplication(
         ('/', MainHandler),
         (r'/property/(\d+)', PropertyHandler),
         ('/search', SearchHandler),
-        ('/crimes', CrimesHandler)
+        ('/crimes', CrimesHandler),
+        ('/garbageCollection', GarbageCollectionHandler)
     ], debug=True)
 
 
