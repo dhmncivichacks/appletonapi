@@ -48,17 +48,19 @@ def sanitizeinputwords(rawinput):
     if m:
         return m.group(0)
 
-
-class PropertyHandler(webapp2.RequestHandler):
-    def get(self, propkey):
-        result = self.execute(propkey)
-
-        if result.has_key('error'):
-            self.response.out.write(result['error'])
+class BaseHandler(webapp2.RequestHandler):
+    def write_response(self, response):
+        if response.has_key('error'):
+            self.response.out.write(response['error'])
         else:
             self.response.headers["Content-Type"] = "application/json"
             self.response.headers["Access-Control-Allow-Origin"] = "*"
-            self.response.out.write(json.dumps(result['propdetail'], sort_keys=True, indent=4, separators=(',', ': ')))
+            self.response.out.write(json.dumps(response['result'], sort_keys=True, indent=4, separators=(',', ': ')))
+
+
+class PropertyHandler(BaseHandler):
+    def get(self, propkey):
+        return self.write_response(self.execute(propkey))
     
     def execute(self, propkey):
         propkey = sanitizeinputwords(propkey)
@@ -68,7 +70,7 @@ class PropertyHandler(webapp2.RequestHandler):
         p = memcache.get(propkey)
         if p is not None:
             logging.debug("from memcache: " + propkey)
-            return { 'propdetail' : p }
+            return { 'result' : p }
         else:
             detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
             datagroups = []
@@ -114,21 +116,14 @@ class PropertyHandler(webapp2.RequestHandler):
                                     datagroups.append(datadict)
                 logging.debug("setting memcache for key: " + propkey)
                 memcache.add(str(propkey), datagroups)
-                return { 'propdetail' : datagroups }
+                return { 'result' : datagroups }
             except urllib2.HTTPError, response:
                 return { 'error' : 'error - Scrape: ' + str(response) }
 
 
-class SearchHandler(webapp2.RequestHandler):
+class SearchHandler(BaseHandler):
     def get(self):
-        result = self.execute(self.request.get('q'), str(self.request.headers['User-Agent']))
-
-        if result.has_key('error'):
-            self.response.out.write(result['error'])
-        else:
-            self.response.headers["Content-Type"] = "application/json"
-            self.response.headers["Access-Control-Allow-Origin"] = "*"
-            self.response.out.write(json.dumps(result['allresults'], sort_keys=True, indent=4, separators=(',', ': ')))
+        return self.write_response(self.execute(self.request.get('q'), str(self.request.headers['User-Agent'])))
 
     def execute(self, search_input, user_agent):
         # Google maps geolocation appends 'USA' but the address parser can't cope
@@ -197,31 +192,33 @@ class SearchHandler(webapp2.RequestHandler):
                                 searchresult.append(label.strip())
                             allresults.append(searchresult)
 
-            return { 'allresults' : allresults }
+            return { 'result' : allresults }
         except urllib2.URLError, e:
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
             return { 'error' : "Cannot search :( <br/>" + str(e) }
 
 
-class GarbageCollectionHandler(webapp2.RequestHandler):
+class GarbageCollectionHandler(BaseHandler):
     def get(self):
-        search_handler = SearchHandler()
-        search_result = search_handler.execute(self.request.get('addr'), str(self.request.headers['User-Agent']))
-        
-        if search_result.has_key('error'):
-            self.response.out.write(search_result['error'])
-            return
-           
-        result = []
-        if len(search_result['allresults']) > 0:
-            prop_handler = PropertyHandler()
-            prop_result = prop_handler.execute(search_result['allresults'][0][0])
-            if prop_result.has_key('error'):
-                self.response.out.write(prop_result['error'])
-                return
+        return self.write_response(self.execute(self.request.get('addr'), str(self.request.headers['User-Agent'])))
 
-            garbage_day = prop_result['propdetail'][1]['garbageday']
-            recycling_day = prop_result['propdetail'][1]['recycleday']
+    def execute(self, address, user_agent):
+        search_handler = SearchHandler()
+        search_response = search_handler.execute(address, user_agent)
+        
+        if search_response.has_key('error'):
+            return search_response
+           
+        collection_days = []
+        
+        if len(search_response['result']) > 0:
+            prop_handler = PropertyHandler()
+            prop_response = prop_handler.execute(search_response['result'][0][0])
+            if prop_response.has_key('error'):
+                return prop_response
+
+            garbage_day = prop_response['result'][1]['garbageday']
+            recycling_day = prop_response['result'][1]['recycleday']
             split_recycling_day = recycling_day.split(',')
             found_recycling = False
             cur_date = datetime.now()
@@ -231,18 +228,16 @@ class GarbageCollectionHandler(webapp2.RequestHandler):
                 today_string = cur_date.strftime('%Y-%m-%d')
                 
                 if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
-                    result.append( { 'collectionType' : 'trash', 'collectionDate' : today_string } )
+                    collection_days.append( { 'collectionType' : 'trash', 'collectionDate' : today_string } )
                 
                 if cur_date.strftime('%m-%d-%Y') == split_recycling_day[1].strip():
-                    result.append( { 'collectionType' : 'recycling', 'collectionDate' : today_string } )
+                    collection_days.append( { 'collectionType' : 'recycling', 'collectionDate' : today_string } )
                     found_recycling = True
                     
                 cur_date += timedelta(days=1)
                 failsafe_count += 1
 
-        self.response.headers["Content-Type"] = "application/json"
-        self.response.headers["Access-Control-Allow-Origin"] = "*"
-        self.response.out.write(json.dumps(result, sort_keys=True, indent=4, separators=(',', ': ')))
+        return { 'result': collection_days }
 
     def day_of_week_string_to_int(self, string_day):
         return {
@@ -256,11 +251,13 @@ class GarbageCollectionHandler(webapp2.RequestHandler):
         }[string_day]
 
 
-class CrimesHandler(webapp2.RequestHandler):
+class CrimesHandler(BaseHandler):
     def get(self):
-        start_date = self.request.get('start_date',
-                                      default_value=(datetime.now() - timedelta(days=7)).strftime(DATE_FORMAT))
+        start_date = self.request.get('start_date', default_value=(datetime.now() - timedelta(days=7)).strftime(DATE_FORMAT))
         end_date = self.request.get('end_date', default_value=datetime.now().strftime(DATE_FORMAT))
+        return self.write_response(self.execute(start_date, end_date))
+
+    def execute(self, start_date, end_date):
         allresults = []
         for x in range(2):
             # Rows and Columns are based on Google Map tiles of the Appleton area
@@ -284,9 +281,7 @@ class CrimesHandler(webapp2.RequestHandler):
                                            column)
                 result = urlfetch.fetch(url, deadline=10)
                 allresults += json.loads(result.content)['crimes']
-        self.response.headers["Content-Type"] = "application/json"
-        self.response.headers["Access-Control-Allow-Origin"] = "*"
-        self.response.out.write(json.dumps(allresults, sort_keys=True, indent=4, separators=(',', ': ')))
+        return { 'result' : allresults }
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -318,7 +313,7 @@ app = webapp2.WSGIApplication(
         (r'/property/(\d+)', PropertyHandler),
         ('/search', SearchHandler),
         ('/crimes', CrimesHandler),
-        ('/garbageCollection', GarbageCollectionHandler)
+        ('/garbagecollection', GarbageCollectionHandler)
     ], debug=True)
 
 
