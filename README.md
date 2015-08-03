@@ -16,7 +16,46 @@ Apps that allow you to lookup recycling pickup schedule for the current week:
 * [Is it recycling week in Appleton?](https://github.com/dhmncivichacks/isitrecycling) - web app
 * [Civic Hack API Locator](https://github.com/mrosack/civic-hack-api-locator) - Not a client, but an API discovery/contract project to which AppletonAPI will attempt to adhere to
 
-## API v3.0.0 (current)
+## API v3.1.0 (current)
+
+#### Crimes
+
+Appleton Police Department reported crime data.
+
+    GET /crimes?start_date={yyyy-mm-dd}&end_date={yyyy-mm-dd}
+
+**Requires**: None. Called without parameters this route will return data for the current date UTC.
+
+**Optional parameters**: &start_date and &end_date in ISO 8601 format `yyyy-mm-dd` not to exceed 7 days in total.
+
+**Returns**: JSON result of crime data search.
+
+**Example**: http://3-1.appletonapi.appspot.com/crimes?start_date=2015-08-01
+
+```
+[
+    {
+        "address": "900 Block W SUMMER ST",
+        "agency_page_link": "appleton",
+        "ccn": "LAC15-027902-00",
+        "description": null,
+        "id": 725948116,
+        "incident_date_time": "2015-08-01T16:30:00Z",
+        "incident_type_id": 161,
+        "incident_type_name": "ASSIST",
+        "incident_type_pinnable": true,
+        "lat": 44.27179,
+        "lng": -88.420138,
+        "org_id": 83558,
+        "org_name": "Appleton Police Department ",
+        "processing_level": 3,
+        "public_narrative": "ASSIST",
+        "time_spread": 0,
+        "tipsoft_id": 1105
+    },
+    <...etc>
+]
+```
 
 #### Search
 
@@ -28,7 +67,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result consisting of a list of possible property ids.
 
-**Example**: http://3-0.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
+**Example**: http://3-1.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
 
 ```
 [
@@ -58,7 +97,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result containing the majority of data available on my.appleton.org for that property.
 
-**Example**: http://3-0.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
+**Example**: http://3-1.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
 
 ```
 [

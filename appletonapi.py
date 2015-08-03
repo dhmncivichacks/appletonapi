@@ -253,11 +253,17 @@ class GarbageCollectionHandler(BaseHandler):
 
 class CrimesHandler(BaseHandler):
     def get(self):
-        start_date = self.request.get('start_date', default_value=(datetime.now() - timedelta(days=7)).strftime(DATE_FORMAT))
-        end_date = self.request.get('end_date', default_value=datetime.now().strftime(DATE_FORMAT))
+        start_date = self.request.get('start_date', default_value=(datetime.now()).strftime(DATE_FORMAT))
+        end_date = self.request.get('end_date', default_value=start_date)
+        start_date_math = datetime.strptime(start_date, DATE_FORMAT)
+        end_date_math = datetime.strptime(end_date, DATE_FORMAT)
+        if end_date_math - start_date_math > timedelta(days=7):
+            logging.debug("Limiting search range to 7 days from start_date")
+            end_date = (start_date_math + timedelta(days=7)).strftime(DATE_FORMAT)
         return self.write_response(self.execute(start_date, end_date))
 
     def execute(self, start_date, end_date):
+        logging.debug("start_date:%s end_date:%s",start_date,end_date)
         allresults = []
         for x in range(2):
             # Rows and Columns are based on Google Map tiles of the Appleton area
