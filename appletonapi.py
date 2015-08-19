@@ -220,22 +220,23 @@ class GarbageCollectionHandler(BaseHandler):
             garbage_day = prop_response['result'][1]['garbageday']
             recycling_day = prop_response['result'][1]['recycleday']
             split_recycling_day = recycling_day.split(',')
+            recycling_date = split_recycling_day[1].strip()
             found_recycling = False
             cur_date = datetime.now()
-            failsafe_count = 0
+            lookahead_days = 0
 
-            while not found_recycling and failsafe_count < 21:
+            while not found_recycling and lookahead_days < 21:
                 today_string = cur_date.strftime('%Y-%m-%d')
-                
+
                 if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
                     collection_days.append( { 'collectionType' : 'trash', 'collectionDate' : today_string } )
-                
-                if cur_date.strftime('%m-%d-%Y') == split_recycling_day[1].strip():
+
+                if cur_date.strftime('%m-%d-%Y') == recycling_date:
                     collection_days.append( { 'collectionType' : 'recycling', 'collectionDate' : today_string } )
                     found_recycling = True
-                    
+
                 cur_date += timedelta(days=1)
-                failsafe_count += 1
+                lookahead_days += 1
 
         return { 'result': collection_days }
 
