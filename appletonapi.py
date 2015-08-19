@@ -223,9 +223,9 @@ class GarbageCollectionHandler(BaseHandler):
             recycling_date = split_recycling_day[1].strip()
             found_recycling = False
             cur_date = datetime.now()
-            days_counted = 0
+            lookahead_days = 0
 
-            while not found_recycling and days_counted < 21:
+            while not found_recycling and lookahead_days < 21:
                 today_string = cur_date.strftime('%Y-%m-%d')
 
                 if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
@@ -236,7 +236,7 @@ class GarbageCollectionHandler(BaseHandler):
                     found_recycling = True
 
                 cur_date += timedelta(days=1)
-                days_counted += 1
+                lookahead_days += 1
 
         return { 'result': collection_days }
 
