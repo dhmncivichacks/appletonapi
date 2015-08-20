@@ -307,7 +307,7 @@ class MainHandler(webapp2.RequestHandler):
 <body>
 <p>AppletonAPI is the humble beginning of a RESTful API for Appleton, WI civic data.</p>
 <p>All data presented by AppletonAPI is directly from <a href="http://my.appleton.org/">http://my.appleton.org/</a> and presented in a manner usable by client programmers.</p>
-<p><a href="https://github.com/mikeputnam/appletonapi">Documentation and source code available on Github.</a></p>
+<p><a href="https://github.com/dhmncivichacks/appletonapi">Documentation and source code available on Github.</a></p>
 </body>
 </html>
         """
