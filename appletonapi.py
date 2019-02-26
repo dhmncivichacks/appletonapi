@@ -1,5 +1,5 @@
 """
-Copyright (c) 2015 Mike Putnam <mike@theputnams.net>
+Copyright (c) 2019 Mike Putnam <mike@theputnams.net>
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -61,7 +61,7 @@ class BaseHandler(webapp2.RequestHandler):
 class PropertyHandler(BaseHandler):
     def get(self, propkey):
         return self.write_response(self.execute(propkey))
-    
+
     def execute(self, propkey):
         propkey = sanitizeinputwords(propkey)
         major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
@@ -205,12 +205,12 @@ class GarbageCollectionHandler(BaseHandler):
     def execute(self, address, user_agent):
         search_handler = SearchHandler()
         search_response = search_handler.execute(address, user_agent)
-        
+
         if search_response.has_key('error'):
             return search_response
-           
+
         collection_days = []
-        
+
         if len(search_response['result']) > 0:
             prop_handler = PropertyHandler()
             prop_response = prop_handler.execute(search_response['result'][0][0])
@@ -252,45 +252,6 @@ class GarbageCollectionHandler(BaseHandler):
         }[string_day]
 
 
-class CrimesHandler(BaseHandler):
-    def get(self):
-        start_date = self.request.get('start_date', default_value=(datetime.now()).strftime(DATE_FORMAT))
-        end_date = self.request.get('end_date', default_value=start_date)
-        start_date_math = datetime.strptime(start_date, DATE_FORMAT)
-        end_date_math = datetime.strptime(end_date, DATE_FORMAT)
-        if end_date_math - start_date_math > timedelta(days=7):
-            logging.debug("Limiting search range to 7 days from start_date")
-            end_date = (start_date_math + timedelta(days=7)).strftime(DATE_FORMAT)
-        return self.write_response(self.execute(start_date, end_date))
-
-    def execute(self, start_date, end_date):
-        logging.debug("start_date:%s end_date:%s",start_date,end_date)
-        allresults = []
-        for x in range(2):
-            # Rows and Columns are based on Google Map tiles of the Appleton area
-            row = 2970 + x
-            for y in range(1, 8):
-                column = 2080 + y
-                url = 'https://www.crimereports.com/v3/crime_reports/map/search_by_tile.json?org_ids={0}' \
-                      '&include_sex_offenders={1}' \
-                      '&incident_type_ids={2}' \
-                      '&start_date={3}' \
-                      '&end_date={4}' \
-                      '&zoom={5}' \
-                      '&row={6}' \
-                      '&column={7}'.format(83558,
-                                           'false',
-                                           '8,9,10,11,12,14,97,98,99,100,101,103,148,149,151,160,163,165,166,167,169,171,172,180,168,121,162,164,179,178,150,173,161,104',
-                                           start_date,
-                                           end_date,
-                                           13,
-                                           row,
-                                           column)
-                result = urlfetch.fetch(url, deadline=10)
-                allresults += json.loads(result.content)['crimes']
-        return { 'result' : allresults }
-
-
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         indexhtml = """
@@ -319,7 +280,6 @@ app = webapp2.WSGIApplication(
         ('/', MainHandler),
         (r'/property/(\d+)', PropertyHandler),
         ('/search', SearchHandler),
-        ('/crimes', CrimesHandler),
         ('/garbagecollection', GarbageCollectionHandler)
     ], debug=True)
 
