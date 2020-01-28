@@ -218,7 +218,7 @@ class GarbageCollectionHandler(BaseHandler):
                 return prop_response
 
             garbage_day = prop_response['result'][1]['garbageday']
-            recycling_day = prop_response['result'][1]['recycleday']
+            recycling_day = prop_response['result'][1]['residentialrecycleday']
             split_recycling_day = recycling_day.split(',')
             recycling_date = split_recycling_day[1].strip()
             found_recycling = False
