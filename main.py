@@ -28,6 +28,8 @@ import streetaddress
 
 from flask import Flask, jsonify
 
+app = Flask(__name__)
+
 DATE_FORMAT = "%Y-%m-%d"
 
 _digits = re.compile('\d')
@@ -269,7 +271,6 @@ class MainHandler():
         """
         self.response.out.write(indexhtml)
 
-app = Flask(__name__)
 
 # app = webapp2.WSGIApplication(
 #     [
