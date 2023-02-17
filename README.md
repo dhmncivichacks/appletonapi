@@ -171,7 +171,30 @@ Search for a property within the city of Appleton using the street address.
 ```
 
 ## Deployment notes (for the maintainer)
+Use miniconda/conda within VSCode to create a venv for you and the tell VSCode to use it for the below.
 ```
+Assorted pre-requisites:
+
+# Python 2 to 3 tool
+$ pip install modernize
+$ python-modernize -w appletonapi.py
+
+# Googly dev server tools
+$ sudo apt-get update && sudo apt-get install google-cloud-sdk-skaffold google-cloud-sdk-bigtable-emulator google-cloud-sdk-anthos-auth google-cloud-sdk-log-streaming google-cloud-sdk-pubsub-emulator google-cloud-sdk google-cloud-sdk-terraform-tools google-cloud-sdk-cbt google-cloud-sdk-harbourbridge google-cloud-sdk-minikube google-cloud-sdk-spanner-emulator google-cloud-sdk-datastore-emulator google-cloud-sdk-app-engine-python-extras google-cloud-sdk-kpt google-cloud-sdk-kubectl-oidc google-cloud-sdk-package-go-module google-cloud-sdk-cloud-build-local google-cloud-sdk-local-extract google-cloud-sdk-app-engine-go google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-java google-cloud-sdk-app-engine-grpc google-cloud-sdk-gke-gcloud-auth-plugin google-cloud-sdk-config-connector google-cloud-sdk-nomos google-cloud-sdk-firestore-emulator kubectl google-cloud-sdk-cloud-run-proxy
+
+# More Googly bits
+$ pip install --upgrade gcloud
+$ pip install --upgrade google-api-python-client
+$ pip install google-cloud
+
+# Install local deps
+$ pip install -r requirements.txt
+
+# Run Googly dev server
+$ dev_appserver.py --dev_appserver_log_level debug --application appletonapi .
+
+$ gcloud app logs tail -s default
+
 $ gcloud app deploy --version 3-3 --no-promote
 ```
 ## Deprecated API versions.
