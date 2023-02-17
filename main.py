@@ -272,21 +272,3 @@ def main_handler():
     """
     return indexhtml
 
-
-# app = webapp2.WSGIApplication(
-#     [
-#         ('/', MainHandler),
-#         (r'/property/(\d+)', PropertyHandler),
-#         ('/search', SearchHandler),
-#         ('/garbagecollection', GarbageCollectionHandler)
-#     ], debug=True)
-
-
-# def main():
-#     # Set the logging level in the main function
-#     logging.getLogger().setLevel(logging.DEBUG)
-#     webapp.util.run_wsgi_app(app)
-
-
-# if __name__ == '__main__':
-#     main()
