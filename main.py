@@ -46,69 +46,54 @@ def extracttagvalues(line):
     return None
 
 
-def sanitizeinputwords(rawinput):
-    '''Hacky regex to strip ugly input.'''
-    maybe_match = re.search(r'^\w+$', rawinput)
-    if maybe_match:
-        return maybe_match.group(0)
-    return None
-
-
 @app.route('/property/<int:propkey>')
-class PropertyHandler():
+def property_handler(propkey):
     '''Calls coming in with a propkey.'''
-    def get(self, propkey):
-        '''Get'''
-        return self.write_response(self.execute(propkey))
-
-    def execute(self, propkey):
-        '''Execute'''
-        propkey = sanitizeinputwords(propkey)
-        detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
-        datagroups = []
-        try:
-            docroot = lxml.html.fromstring(requests.get(detailurl, timeout=15).content)
-            tables = docroot.xpath("//table[@class='t1']")
-            for table in tables:
-                ths = table.xpath("./tr/th")  # assuming single <th> per table
-                for th in ths:
-                    if th is not None:
-                        lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
-                        if th.text:
-                            thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
-                            datagroups.append(thkey)
-                            if th.text.strip() == "Businesses":
-                                logging.debug("found Business <th>")
-                                tdkey = "businesses"
-                                businesslist = []
-                                tds = table.xpath("./tr/td")
-                                if tds is not None:
-                                    for td in tds:
-                                        lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
-                                        businesslist.append(td.text.strip())
-                                logging.debug("businesslist: " + str(businesslist))
-                            datadict = {}
-                            tdcounter = 0
+    detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
+    datagroups = []
+    try:
+        docroot = lxml.html.fromstring(requests.get(detailurl, timeout=15).content)
+        tables = docroot.xpath("//table[@class='t1']")
+        for table in tables:
+            ths = table.xpath("./tr/th")  # assuming single <th> per table
+            for th in ths:
+                if th is not None:
+                    lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
+                    if th.text:
+                        thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
+                        datagroups.append(thkey)
+                        if th.text.strip() == "Businesses":
+                            logging.debug("found Business <th>")
+                            tdkey = "businesses"
+                            businesslist = []
                             tds = table.xpath("./tr/td")
                             if tds is not None:
                                 for td in tds:
                                     lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
-                                    if tdcounter == 0:
-                                        tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
-                                        tdcounter += 1
+                                    businesslist.append(td.text.strip())
+                            logging.debug("businesslist: " + str(businesslist))
+                        datadict = {}
+                        tdcounter = 0
+                        tds = table.xpath("./tr/td")
+                        if tds is not None:
+                            for td in tds:
+                                lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                if tdcounter == 0:
+                                    tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
+                                    tdcounter += 1
+                                else:
+                                    tdvalue = td.text.strip().title() if td.text else ''
+                                    tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
+                                    tdcounter = 0
+                                    # when the source tr + td are commented out lxml still sees them. PREVENT!
+                                    if tdkey == '' and tdvalue == '':
+                                        break
                                     else:
-                                        tdvalue = td.text.strip().title() if td.text else ''
-                                        tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
-                                        tdcounter = 0
-                                        # when the source tr + td are commented out lxml still sees them. PREVENT!
-                                        if tdkey == '' and tdvalue == '':
-                                            break
-                                        else:
-                                            datadict[tdkey] = tdvalue
-                                datagroups.append(datadict)
-            return jsonify({ 'result' : datagroups })
-        except requests.HTTPError as response:
-            return jsonify({ 'error' : 'error - Scrape: ' + str(response) })
+                                        datadict[tdkey] = tdvalue
+                            datagroups.append(datadict)
+        return jsonify({ 'result' : datagroups })
+    except requests.HTTPError as response:
+        return jsonify({ 'error' : 'error - Scrape: ' + str(response) })
 
 
 @app.route('/search')
