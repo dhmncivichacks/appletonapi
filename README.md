@@ -169,6 +169,11 @@ Search for a property within the city of Appleton using the street address.
     }
 ]
 ```
+
+## Deployment notes (for the maintainer)
+```
+$ gcloud app deploy --version 3-3 --no-promote
+```
 ## Deprecated API versions.
 
 In order to reduce client breakage due to changes in the API, it is best to define the API version number in your calls. This way you will have time to refactor your client to work with new API changes.

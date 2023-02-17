@@ -14,114 +14,103 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """
 
+from __future__ import absolute_import
 from datetime import datetime, timedelta
-from google.appengine.api import memcache
-from google.appengine.api import namespace_manager
-from google.appengine.api import urlfetch
-import inflect
-import json
+
 import logging
+import re
+
+import inflect
 import lxml.etree
 import lxml.html
-import os
-import re
+import requests
 import streetaddress
-import urllib
-import urllib2
-import webapp2
+
+from flask import Flask, jsonify
 
 DATE_FORMAT = "%Y-%m-%d"
 
 _digits = re.compile('\d')
 def contains_digits(d):
+    '''Decide if we have numbers.'''
     return bool(_digits.search(d))
 
 
 def extracttagvalues(line):
+    '''Parse html stuff.'''
     m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
     if m:
         return re.split('value="', m.group(0))[0]
 
 
 def sanitizeinputwords(rawinput):
+    '''Hacky regex to strip ugly input.'''
     m = re.search('^\w+$', rawinput)
     if m:
         return m.group(0)
 
-class BaseHandler(webapp2.RequestHandler):
-    def write_response(self, response):
-        if response.has_key('error'):
-            self.response.out.write(response['error'])
-        else:
-            self.response.headers["Content-Type"] = "application/json"
-            self.response.headers["Access-Control-Allow-Origin"] = "*"
-            self.response.out.write(json.dumps(response['result'], sort_keys=True, indent=4, separators=(',', ': ')))
 
-
-class PropertyHandler(BaseHandler):
+@app.route('/property/<int:propkey>')
+class PropertyHandler():
+    '''Calls coming in with a propkey.'''
     def get(self, propkey):
         return self.write_response(self.execute(propkey))
 
     def execute(self, propkey):
         propkey = sanitizeinputwords(propkey)
-        major_ver, minor_ver = os.environ.get('CURRENT_VERSION_ID').rsplit('.', 1)
-        namespace_manager.set_namespace(major_ver)
-        logging.debug("namespace: " + major_ver)
-        p = memcache.get(propkey)
-        if p is not None:
-            logging.debug("from memcache: " + propkey)
-            return { 'result' : p }
-        else:
-            detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
-            datagroups = []
-            try:
-                docroot = lxml.html.fromstring(urllib2.urlopen(detailurl).read())
-                tables = docroot.xpath("//table[@class='t1']")
-                for table in tables:
-                    ths = table.xpath("./tr/th")  # assuming single <th> per table
-                    for th in ths:
-                        if th is not None:
-                            lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
-                            if th.text:
-                                thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
-                                datagroups.append(thkey)
-                                if th.text.strip() == "Businesses":
-                                    logging.debug("found Business <th>")
-                                    tdkey = "businesses"
-                                    businesslist = []
-                                    tds = table.xpath("./tr/td")
-                                    if tds is not None:
-                                        for td in tds:
-                                            lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
-                                            businesslist.append(td.text.strip())
-                                    logging.debug("businesslist: " + str(businesslist))
-                                datadict = {}
-                                tdcounter = 0
+        detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
+        datagroups = []
+        try:
+            docroot = lxml.html.fromstring(requests.get(detailurl, timeout=15).content)
+            tables = docroot.xpath("//table[@class='t1']")
+            for table in tables:
+                ths = table.xpath("./tr/th")  # assuming single <th> per table
+                for th in ths:
+                    if th is not None:
+                        lxml.etree.strip_tags(th, 'a', 'b', 'br', 'span', 'strong')
+                        if th.text:
+                            thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
+                            datagroups.append(thkey)
+                            if th.text.strip() == "Businesses":
+                                logging.debug("found Business <th>")
+                                tdkey = "businesses"
+                                businesslist = []
                                 tds = table.xpath("./tr/td")
                                 if tds is not None:
                                     for td in tds:
                                         lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
-                                        if tdcounter == 0:
-                                            tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
-                                            tdcounter += 1
+                                        businesslist.append(td.text.strip())
+                                logging.debug("businesslist: " + str(businesslist))
+                            datadict = {}
+                            tdcounter = 0
+                            tds = table.xpath("./tr/td")
+                            if tds is not None:
+                                for td in tds:
+                                    lxml.etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
+                                    if tdcounter == 0:
+                                        tdkey = re.sub('\W', '', td.text).lower() if td.text else ''
+                                        tdcounter += 1
+                                    else:
+                                        tdvalue = td.text.strip().title() if td.text else ''
+                                        tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
+                                        tdcounter = 0
+                                        # when the source tr + td are commented out lxml still sees them. PREVENT!
+                                        if tdkey == '' and tdvalue == '':
+                                            break
                                         else:
-                                            tdvalue = td.text.strip().title() if td.text else ''
-                                            tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
-                                            tdcounter = 0
-                                            # when the source tr + td are commented out lxml still sees them. PREVENT!
-                                            if tdkey == '' and tdvalue == '':
-                                                break
-                                            else:
-                                                datadict[tdkey] = tdvalue
-                                    datagroups.append(datadict)
-                logging.debug("setting memcache for key: " + propkey)
-                memcache.add(str(propkey), datagroups)
-                return { 'result' : datagroups }
-            except urllib2.HTTPError, response:
-                return { 'error' : 'error - Scrape: ' + str(response) }
+                                            datadict[tdkey] = tdvalue
+                                datagroups.append(datadict)
+            return jsonify({ 'result' : datagroups })
+        except requests.HTTPError as response:
+            return jsonify({ 'error' : 'error - Scrape: ' + str(response) })
 
 
-class SearchHandler(BaseHandler):
+@app.route('/search')
+class SearchHandler():
+    '''
+    The ugliest hack here (and only real value-add of the whole thing).
+    Parse .aspx forms and get back "useful" data.
+    '''
     def get(self):
         return self.write_response(self.execute(self.request.get('q'), str(self.request.headers['User-Agent'])))
 
@@ -144,7 +133,7 @@ class SearchHandler(BaseHandler):
             return { 'error' : 'Give me *SOMETHING* to search for.'}
 
         try:
-            response = urllib2.urlopen('http://my.appleton.org/')
+            response = requests.get('http://my.appleton.org/', timeout=15).content
             for line in response:
                 if "__VIEWSTATE\"" in line:
                     vs = extracttagvalues(line)
@@ -163,9 +152,10 @@ class SearchHandler(BaseHandler):
                         'Referer': 'http://my.appleton.org/default.aspx',
                         'Accept': 'text/html,application/xhtml+xml,application/xml'
                     }
-                    data = urllib.urlencode(formvalues)
-                    req = urllib2.Request("http://my.appleton.org/default.aspx", data, headers)
-                    response = urllib2.urlopen(req)
+                    #FIXME This is going to hurt.  was "urllib2" >>> now make it "requests".
+                    data = six.moves.urllib.parse.urlencode(formvalues)
+                    req = six.moves.urllib.request.Request("http://my.appleton.org/default.aspx", data, headers)
+                    response = six.moves.urllib.request.urlopen(req)
                     allresults = []
                     # Example of the HTML returned...
                     # <a id="ctl00_myappletonContent_searchResults_ctl03_PropKey"
@@ -177,7 +167,7 @@ class SearchHandler(BaseHandler):
                             m = re.search('(?<=PropKey\=).*(?=&)', pline)
                             if m:
                                 searchresult.append(re.split('PropKey=', m.group(0))[0])
-                            m = re.findall('(?s)<td>(.*?)</td>', response.next())
+                            m = re.findall('(?s)<td>(.*?)</td>', next(response))
                             if m:
                                 # this removes whitespace and Title Cases the address
                                 # given: <td>1200</td><td>W WISCONSIN    AVE </td>
@@ -193,12 +183,14 @@ class SearchHandler(BaseHandler):
                             allresults.append(searchresult)
 
             return { 'result' : allresults }
-        except urllib2.URLError, e:
+        except RuntimeError as err:
             logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
-            return { 'error' : "Cannot search :( <br/>" + str(e) }
+            return { 'error' : "Cannot search :( <br/>" + str(err) }
 
 
-class GarbageCollectionHandler(BaseHandler):
+@app.route('/garbagecollection')
+class GarbageCollectionHandler():
+    '''Look up all the useful details.'''
     def get(self):
         return self.write_response(self.execute(self.request.get('addr'), str(self.request.headers['User-Agent'])))
 
@@ -206,7 +198,7 @@ class GarbageCollectionHandler(BaseHandler):
         search_handler = SearchHandler()
         search_response = search_handler.execute(address, user_agent)
 
-        if search_response.has_key('error'):
+        if 'error' in search_response:
             return search_response
 
         collection_days = []
@@ -214,7 +206,7 @@ class GarbageCollectionHandler(BaseHandler):
         if len(search_response['result']) > 0:
             prop_handler = PropertyHandler()
             prop_response = prop_handler.execute(search_response['result'][0][0])
-            if prop_response.has_key('error'):
+            if 'error' in prop_response:
                 return prop_response
 
             garbage_day = prop_response['result'][1]['garbageday']
@@ -241,6 +233,7 @@ class GarbageCollectionHandler(BaseHandler):
         return { 'result': collection_days }
 
     def day_of_week_string_to_int(self, string_day):
+        '''Map numeric day of week from upstream to human readable day.'''
         return {
             'Monday' : 0,
             'Tuesday' : 1,
@@ -252,7 +245,9 @@ class GarbageCollectionHandler(BaseHandler):
         }[string_day]
 
 
-class MainHandler(webapp2.RequestHandler):
+
+class MainHandler():
+    '''The index / of appletonapi.appspot.com.'''
     def get(self):
         indexhtml = """
 <!DOCTYPE html>
@@ -274,21 +269,22 @@ class MainHandler(webapp2.RequestHandler):
         """
         self.response.out.write(indexhtml)
 
+app = Flask(__name__)
 
-app = webapp2.WSGIApplication(
-    [
-        ('/', MainHandler),
-        (r'/property/(\d+)', PropertyHandler),
-        ('/search', SearchHandler),
-        ('/garbagecollection', GarbageCollectionHandler)
-    ], debug=True)
-
-
-def main():
-    # Set the logging level in the main function
-    logging.getLogger().setLevel(logging.DEBUG)
-    webapp.util.run_wsgi_app(app)
+# app = webapp2.WSGIApplication(
+#     [
+#         ('/', MainHandler),
+#         (r'/property/(\d+)', PropertyHandler),
+#         ('/search', SearchHandler),
+#         ('/garbagecollection', GarbageCollectionHandler)
+#     ], debug=True)
 
 
-if __name__ == '__main__':
-    main()
+# def main():
+#     # Set the logging level in the main function
+#     logging.getLogger().setLevel(logging.DEBUG)
+#     webapp.util.run_wsgi_app(app)
+
+
+# if __name__ == '__main__':
+#     main()

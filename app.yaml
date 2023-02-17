@@ -1,15 +1,12 @@
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python310
 
 handlers:
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
 - url: .*
-  script: appletonapi.app
+  script: main.app
 
-libraries:
-- name: lxml
-  version: latest
-
+#libraries:
+#- name: lxml
+#  version: latest
