@@ -32,33 +32,37 @@ app = Flask(__name__)
 
 DATE_FORMAT = "%Y-%m-%d"
 
-_digits = re.compile('\d')
-def contains_digits(d):
+_digits = re.compile(r'\d')
+def contains_digits(maybe_digits):
     '''Decide if we have numbers.'''
-    return bool(_digits.search(d))
+    return bool(_digits.search(maybe_digits))
 
 
 def extracttagvalues(line):
     '''Parse html stuff.'''
-    m = re.search('(?<=value\=\").*?([^\'" >]+)', line)
-    if m:
-        return re.split('value="', m.group(0))[0]
+    maybe_match = re.search(r'(?<=value\=\").*?([^\'" >]+)', line)
+    if maybe_match:
+        return re.split('value="', maybe_match.group(0))[0]
+    return None
 
 
 def sanitizeinputwords(rawinput):
     '''Hacky regex to strip ugly input.'''
-    m = re.search('^\w+$', rawinput)
-    if m:
-        return m.group(0)
+    maybe_match = re.search(r'^\w+$', rawinput)
+    if maybe_match:
+        return maybe_match.group(0)
+    return None
 
 
 @app.route('/property/<int:propkey>')
 class PropertyHandler():
     '''Calls coming in with a propkey.'''
     def get(self, propkey):
+        '''Get'''
         return self.write_response(self.execute(propkey))
 
     def execute(self, propkey):
+        '''Execute'''
         propkey = sanitizeinputwords(propkey)
         detailurl = "http://my.appleton.org/Propdetail.aspx?PropKey=" + str(propkey)
         datagroups = []
