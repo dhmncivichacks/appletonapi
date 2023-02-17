@@ -265,11 +265,9 @@ class GarbageCollectionHandler():
 
 
 @app.route('/')
-class MainHandler():
+def main_handler():
     '''The index / of appletonapi.appspot.com.'''
-    def get(self):
-        '''Get'''
-        indexhtml = """
+    indexhtml = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -286,8 +284,8 @@ class MainHandler():
 <p><a href="https://github.com/dhmncivichacks/appletonapi">Documentation and source code available on Github.</a></p>
 </body>
 </html>
-        """
-        self.response.out.write(indexhtml)
+    """
+    return indexhtml
 
 
 # app = webapp2.WSGIApplication(
