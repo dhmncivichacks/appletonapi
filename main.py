@@ -118,20 +118,23 @@ class SearchHandler():
     Parse .aspx forms and get back "useful" data.
     '''
     def get(self):
+        '''Get'''
         return self.write_response(self.execute(self.request.get('q'), str(self.request.headers['User-Agent'])))
 
     def execute(self, search_input, user_agent):
+        '''Execute'''
         # Google maps geolocation appends 'USA' but the address parser can't cope
         search_input = search_input.replace('USA','')
         addr = streetaddress.parse(search_input)
         if addr is None:
-            # Since we are so tightly coupled with Appleton data, let's just pacify the address parser
+            # Since we are so tightly coupled with Appleton data,
+            # let's just pacify the address parser.
             addr = streetaddress.parse(search_input + ' Appleton, WI')
         housenumber = addr['number']
         # Handle upstream requirement of "Fifth" not "5th"
-        p = inflect.engine()
+        inflect_instance = inflect.engine()
         if contains_digits(addr['street']):
-            street = p.number_to_words(addr['street'])
+            street = inflect_instance.number_to_words(addr['street'])
         else:
             street = addr['street']
 
@@ -170,18 +173,24 @@ class SearchHandler():
                     for pline in response:
                         if "Propdetail.aspx?PropKey=" in pline:
                             searchresult = []
-                            m = re.search('(?<=PropKey\=).*(?=&)', pline)
-                            if m:
-                                searchresult.append(re.split('PropKey=', m.group(0))[0])
-                            m = re.findall('(?s)<td>(.*?)</td>', next(response))
-                            if m:
+                            maybe_propkey_match = re.search(r'(?<=PropKey\=).*(?=&)', pline)
+                            if maybe_propkey_match:
+                                searchresult.append(
+                                    re.split('PropKey=', maybe_propkey_match.group(0))[0]
+                                    )
+                            maybe_td_match = re.findall(r'(?s)<td>(.*?)</td>', next(response))
+                            if maybe_td_match:
                                 # this removes whitespace and Title Cases the address
                                 # given: <td>1200</td><td>W WISCONSIN    AVE </td>
                                 # returns: ['1200', 'W Wisconsin Ave']
-                                address = [' '.join(t.split()).strip().title() for t in m]
+                                address = [
+                                    ' '.join(t.split()).strip().title() for t in maybe_td_match
+                                    ]
                                 searchresult.append(address[0]) #Number
-                                # Thank you Dan Gabrielson <dan.gabrielson@gmail.com> and Matt Everson https://github.com/matteverson
-                                # for your help at 2015 Appleton Civic Hackathon! This closes https://github.com/mikeputnam/appletonapi/issues/5
+                                # Thank you Dan Gabrielson <dan.gabrielson@gmail.com> and
+                                # Matt Everson https://github.com/matteverson
+                                # for your help at 2015 Appleton Civic Hackathon!
+                                # This closes https://github.com/mikeputnam/appletonapi/issues/5
                                 label = ' '
                                 for chunk in address[1:]:
                                     label += chunk + ' '
@@ -227,10 +236,14 @@ class GarbageCollectionHandler():
                 today_string = cur_date.strftime('%Y-%m-%d')
 
                 if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
-                    collection_days.append( { 'collectionType' : 'trash', 'collectionDate' : today_string } )
+                    collection_days.append(
+                        { 'collectionType' : 'trash', 'collectionDate' : today_string }
+                        )
 
                 if cur_date.strftime('%m-%d-%Y') == recycling_date:
-                    collection_days.append( { 'collectionType' : 'recycling', 'collectionDate' : today_string } )
+                    collection_days.append(
+                        { 'collectionType' : 'recycling', 'collectionDate' : today_string }
+                        )
                     found_recycling = True
 
                 cur_date += timedelta(days=1)
@@ -255,6 +268,7 @@ class GarbageCollectionHandler():
 class MainHandler():
     '''The index / of appletonapi.appspot.com.'''
     def get(self):
+        '''Get'''
         indexhtml = """
 <!DOCTYPE html>
 <html lang="en">
