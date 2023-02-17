@@ -245,7 +245,7 @@ class GarbageCollectionHandler():
         }[string_day]
 
 
-
+@app.route('/')
 class MainHandler():
     '''The index / of appletonapi.appspot.com.'''
     def get(self):
