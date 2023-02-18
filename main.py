@@ -54,7 +54,8 @@ def property_handler(propkey):
                         thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
                         datagroups.append(thkey)
                         if th.text.strip() == "Businesses":
-                            logging.debug("found Business <th>")
+                            logging.info("found Business <th>")
+                            print("found Business <th>")
                             tdkey = "businesses"
                             businesslist = []
                             tds = table.xpath("./tr/td")
@@ -120,7 +121,6 @@ def search_handler():
         #print(foo)
         view_state = foo_tree.xpath("//input[@name='__VIEWSTATE']/@value")[0]
         event_validation = foo_tree.xpath("//input[@name='__EVENTVALIDATION']/@value")[0]
-
         formvalues = {
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
@@ -148,8 +148,17 @@ def search_handler():
         # href="Propdetail.aspx?PropKey=312039300&amp;Num=100">312039300  </a>
         #                  </td><td>100</td><td>E WASHINGTON           ST  </td>
         searchresult = []
+        print(res_tree.xpath("//table[@id='ctl00_myappletonContent_searchResults']/tr[position()>1 and position()<last()]/td/a/text()") )
+
+        # Working but only gets the first propkey.
         stripped_propkey = res_tree.xpath("//a[contains(@id, 'ctl00_myappletonContent_searchResults_ctl03_PropKey')]/text()")[0].strip()
-        searchresult.append(stripped_propkey)
+        if stripped_propkey:
+            searchresult.append(stripped_propkey)
+            address_list = res_tree.xpath("//td/text()")
+            for item in address_list:
+                pass
+                #print(item.strip())
+
         # for pline in response:
         #     if "Propdetail.aspx?PropKey=" in pline:
         #         searchresult = []
