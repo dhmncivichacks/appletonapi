@@ -141,53 +141,39 @@ def search_handler():
             timeout=15
             )
         #print(response.text)
-        res_parser = etree.HTMLParser()
+        res_parser = etree.HTMLParser(remove_blank_text=True)
         res_tree = etree.fromstring(response.text, res_parser)
         # Example of the HTML returned...
         # <a id="ctl00_myappletonContent_searchResults_ctl03_PropKey"
         # href="Propdetail.aspx?PropKey=312039300&amp;Num=100">312039300  </a>
         #                  </td><td>100</td><td>E WASHINGTON           ST  </td>
         searchresult = []
-        print(res_tree.xpath("//table[@id='ctl00_myappletonContent_searchResults']/tr[position()>1 and position()<last()]/td/a/text()") )
 
-        # Working but only gets the first propkey.
-        stripped_propkey = res_tree.xpath("//a[contains(@id, 'ctl00_myappletonContent_searchResults_ctl03_PropKey')]/text()")[0].strip()
-        if stripped_propkey:
-            searchresult.append(stripped_propkey)
-            address_list = res_tree.xpath("//td/text()")
-            for item in address_list:
-                pass
-                #print(item.strip())
+        # Returns all the text from the td's and the a's in the search results table.
+        table_td_list = res_tree.xpath("//table[@id='ctl00_myappletonContent_searchResults']/tr[position()>1 and position()<last()]/td | //table[@id='ctl00_myappletonContent_searchResults']/tr[position()>1 and position()<last()]/td/a")
 
-        # for pline in response:
-        #     if "Propdetail.aspx?PropKey=" in pline:
-        #         searchresult = []
-        #         maybe_propkey_match = re.search(r'(?<=PropKey\=).*(?=&)', pline)
-        #         if maybe_propkey_match:
-        #             searchresult.append(
-        #                 re.split('PropKey=', maybe_propkey_match.group(0))[0]
-        #                 )
-        #         maybe_td_match = re.findall(r'(?s)<td>(.*?)</td>', next(response))
-        #         if maybe_td_match:
-        #             # this removes whitespace and Title Cases the address
-        #             # given: <td>1200</td><td>W WISCONSIN    AVE </td>
-        #             # returns: ['1200', 'W Wisconsin Ave']
-        #             address = [
-        #                 ' '.join(t.split()).strip().title() for t in maybe_td_match
-        #                 ]
-        #             searchresult.append(address[0]) #Number
-        #             # Thank you Dan Gabrielson <dan.gabrielson@gmail.com> and
-        #             # Matt Everson https://github.com/matteverson
-        #             # for your help at 2015 Appleton Civic Hackathon!
-        #             # This closes https://github.com/mikeputnam/appletonapi/issues/5
-        #             label = ' '
-        #             for chunk in address[1:]:
-        #                 label += chunk + ' '
-        #             searchresult.append(label.strip())
-        #         allresults.append(searchresult)
-        allresults.append(searchresult)
+        # Cleans some empty values, whitespace, and Title Cases everything.
+        clean_table_td_list = [' '.join( i.text.split() ).strip().title() for i in table_td_list]
 
-        return { 'result' : allresults }
+        # Given all the fields are in a single flat list, this counts every 5th td and groups them together into a single "record".
+        fields_per_record = 5
+        record_list = [clean_table_td_list[n:n+fields_per_record] for n in range(0, len(clean_table_td_list), fields_per_record)]
+
+        for field in record_list:
+            # the zeroth position is always empty. discard it.
+            del field[0]
+
+            # 0 is the propkey
+            # 1 is the house number
+            # 2 is the street name
+            # 3 is the unit number
+            searchresult.append([
+                field[0],
+                field[1],
+                field[2] + ' ' + field[3]
+            ])
+
+        return { 'result' : searchresult }
     except RuntimeError as err:
         logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
         return { 'error' : "Cannot search :( <br/>" + str(err) }
