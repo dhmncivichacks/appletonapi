@@ -117,7 +117,6 @@ def search_handler():
         foo = requests.get('http://my.appleton.org/', timeout=15).text
         foo_parser = etree.HTMLParser()
         foo_tree = etree.fromstring(foo, foo_parser)
-        allresults = []
         #print(foo)
         view_state = foo_tree.xpath("//input[@name='__VIEWSTATE']/@value")[0]
         event_validation = foo_tree.xpath("//input[@name='__EVENTVALIDATION']/@value")[0]
