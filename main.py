@@ -149,7 +149,8 @@ def search_handler():
         # Cleans some empty values, whitespace, and Title Cases everything.
         clean_table_td_list = [' '.join( i.text.split() ).strip().title() for i in table_td_list]
 
-        # Given all the fields are in a single flat list, this counts every 5th td and groups them together into a single "record".
+        # Given all the fields are in a single flat list, this counts every 5th td and
+        # groups them together into a single "record".
         fields_per_record = 5
         record_list = [clean_table_td_list[n:n+fields_per_record] for n in range(0, len(clean_table_td_list), fields_per_record)]
 
@@ -164,73 +165,67 @@ def search_handler():
             searchresult.append([
                 field[0],
                 field[1],
-                field[2] + ' ' + field[3]
+                field[2] + ' ' + field[3]    # FIXME if there is no UNIT...  line 168, in search_handler field[2] + ' ' + field[3]  IndexError: list index out of range
             ])
 
-        return { 'result' : searchresult }
+        return jsonify({ 'result' : searchresult })
     except RuntimeError as err:
         print('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
-        return { 'error' : "Cannot search :( <br/>" + str(err) }
+        return jsonify({ 'error' : "Cannot search :( <br/>" + str(err) })
 
 
 @app.route('/garbagecollection')
-class GarbageCollectionHandler():
+def garbage_collection_handler():
     '''Look up all the useful details.'''
-    def get(self):
-        return self.write_response(self.execute(self.request.get('addr'), str(self.request.headers['User-Agent'])))
 
-    def execute(self, address, user_agent):
-        search_handler = SearchHandler()
-        search_response = search_handler.execute(address, user_agent)
+    collection_days = []
 
-        if 'error' in search_response:
-            return search_response
+    addr = request.args['addr']
+    search_response = requests.get('http://3-3.appletonapi.appspot.com/search?q=' + addr, timeout=15)
+    search_list = search_response.json()
 
-        collection_days = []
+    # Let's just use the first result ¯\_(ツ)_/¯
+    prop_response = requests.get('http://3-3.appletonapi.appspot.com/property/' + search_list['result'][0][0], timeout=15)
+    property_data = prop_response.json()
 
-        if len(search_response['result']) > 0:
-            prop_response = property_handler(search_response['result'][0][0])
-            if 'error' in prop_response:
-                return prop_response
+    garbage_day = property_data['result'][1]['garbageday']
+    recycling_day = property_data['result'][1]['residentialrecycleday']
+    split_recycling_day = recycling_day.split(',')
+    recycling_date = split_recycling_day[1].strip()
+    found_recycling = False
+    cur_date = datetime.now()
+    lookahead_days = 0
 
-            garbage_day = prop_response['result'][1]['garbageday']
-            recycling_day = prop_response['result'][1]['residentialrecycleday']
-            split_recycling_day = recycling_day.split(',')
-            recycling_date = split_recycling_day[1].strip()
-            found_recycling = False
-            cur_date = datetime.now()
-            lookahead_days = 0
+    while not found_recycling and lookahead_days < 21:
+        today_string = cur_date.strftime('%Y-%m-%d')
 
-            while not found_recycling and lookahead_days < 21:
-                today_string = cur_date.strftime('%Y-%m-%d')
+        if day_of_week_string_to_int(garbage_day) == cur_date.weekday():
+            collection_days.append(
+                { 'collectionType' : 'trash', 'collectionDate' : today_string }
+                )
 
-                if self.day_of_week_string_to_int(garbage_day) == cur_date.weekday():
-                    collection_days.append(
-                        { 'collectionType' : 'trash', 'collectionDate' : today_string }
-                        )
+        if cur_date.strftime('%m-%d-%Y') == recycling_date:
+            collection_days.append(
+                { 'collectionType' : 'recycling', 'collectionDate' : today_string }
+                )
+            found_recycling = True
 
-                if cur_date.strftime('%m-%d-%Y') == recycling_date:
-                    collection_days.append(
-                        { 'collectionType' : 'recycling', 'collectionDate' : today_string }
-                        )
-                    found_recycling = True
+        cur_date += timedelta(days=1)
+        lookahead_days += 1
 
-                cur_date += timedelta(days=1)
-                lookahead_days += 1
+    return jsonify({ 'result': collection_days })
 
-        return { 'result': collection_days }
-
-    def day_of_week_string_to_int(self, string_day):
-        '''Map numeric day of week from upstream to human readable day.'''
-        return {
-            'Monday' : 0,
-            'Tuesday' : 1,
-            'Wednesday' : 2,
-            'Thursday' : 3,
-            'Friday' : 4,
-            'Saturday' : 5,
-            'Sunday' : 6
-        }[string_day]
+def day_of_week_string_to_int(string_day):
+    '''Map numeric day of week from upstream to human readable day.'''
+    return {
+        'Monday' : 0,
+        'Tuesday' : 1,
+        'Wednesday' : 2,
+        'Thursday' : 3,
+        'Friday' : 4,
+        'Saturday' : 5,
+        'Sunday' : 6
+    }[string_day]
 
 
 @app.route('/')
