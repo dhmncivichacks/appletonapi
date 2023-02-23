@@ -110,12 +110,11 @@ def search_handler():
         return { 'error' : 'Give me *SOMETHING* to search for.'}
 
     try:
-        foo = requests.get('http://my.appleton.org/', timeout=15).text
-        foo_parser = etree.HTMLParser()
-        foo_tree = etree.fromstring(foo, foo_parser)
-        #print(foo)
-        view_state = foo_tree.xpath("//input[@name='__VIEWSTATE']/@value")[0]
-        event_validation = foo_tree.xpath("//input[@name='__EVENTVALIDATION']/@value")[0]
+        initial_page = requests.get('http://my.appleton.org/', timeout=15).text
+        initial_page_parser = etree.HTMLParser()
+        initial_page_tree = etree.fromstring(initial_page, initial_page_parser)
+        view_state = initial_page_tree.xpath("//input[@name='__VIEWSTATE']/@value")[0]
+        event_validation = initial_page_tree.xpath("//input[@name='__EVENTVALIDATION']/@value")[0]
         formvalues = {
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
