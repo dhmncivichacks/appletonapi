@@ -17,7 +17,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 from __future__ import absolute_import
 from datetime import datetime, timedelta
 
-import logging
 import re
 
 import inflect
@@ -54,8 +53,6 @@ def property_handler(propkey):
                         thkey = re.sub('\W', '', th.text).lower()  # nospaces all lower
                         datagroups.append(thkey)
                         if th.text.strip() == "Businesses":
-                            logging.info("found Business <th>")
-                            print("found Business <th>")
                             tdkey = "businesses"
                             businesslist = []
                             tds = table.xpath("./tr/td")
@@ -63,7 +60,6 @@ def property_handler(propkey):
                                 for td in tds:
                                     etree.strip_tags(td, 'a', 'b', 'br', 'span', 'strong')
                                     businesslist.append(td.text.strip())
-                            logging.debug("businesslist: " + str(businesslist))
                         datadict = {}
                         tdcounter = 0
                         tds = table.xpath("./tr/td")
@@ -174,7 +170,7 @@ def search_handler():
 
         return { 'result' : searchresult }
     except RuntimeError as err:
-        logging.error('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
+        print('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
         return { 'error' : "Cannot search :( <br/>" + str(err) }
 
 
