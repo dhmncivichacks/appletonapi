@@ -73,7 +73,8 @@ def property_handler(propkey):
                                     tdvalue = td.text.strip().title() if td.text else ''
                                     tdvalue = " ".join(tdvalue.split())  # remove extra whitespace
                                     tdcounter = 0
-                                    # when the source tr + td are commented out lxml still sees them. PREVENT!
+                                    # when the source tr + td are
+                                    # commented out lxml still sees them. PREVENT!
                                     if tdkey == '' and tdvalue == '':
                                         break
                                     else:
@@ -181,11 +182,16 @@ def garbage_collection_handler():
     collection_days = []
 
     addr = request.args['addr']
-    search_response = requests.get('http://3-3.appletonapi.appspot.com/search?q=' + addr, timeout=15)
+    search_response = requests.get(
+        'http://3-3.appletonapi.appspot.com/search?q=' + addr, timeout=15
+    )
     search_list = search_response.json()
 
     # Let's just use the first result ¯\_(ツ)_/¯
-    prop_response = requests.get('http://3-3.appletonapi.appspot.com/property/' + search_list['result'][0][0], timeout=15)
+    prop_response = requests.get(
+        'http://3-3.appletonapi.appspot.com/property/' + search_list['result'][0][0],
+        timeout=15
+    )
     property_data = prop_response.json()
 
     garbage_day = property_data['result'][1]['garbageday']
