@@ -155,18 +155,23 @@ def search_handler():
         fields_per_record = 5
         record_list = [clean_table_td_list[n:n+fields_per_record] for n in range(0, len(clean_table_td_list), fields_per_record)]
 
-        for field in record_list:
+        for record in record_list:
             # the zeroth position is always empty. discard it.
-            del field[0]
+            del record[0]
+
+            # Embarassing hack for cases where this tuple is ''
+            # but we want an orderly concatenation later.
+            if record[3] == '':
+                record[3] = '_'
 
             # 0 is the propkey
             # 1 is the house number
             # 2 is the street name
             # 3 is the unit number
             searchresult.append([
-                field[0],
-                field[1],
-                field[2] + ' ' + field[3]    # FIXME if there is no UNIT...  line 168, in search_handler field[2] + ' ' + field[3]  IndexError: list index out of range
+                record[0],
+                record[1],
+                record[2] + ' ' + record[3]
             ])
 
         return jsonify({ 'result' : searchresult })
