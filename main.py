@@ -17,18 +17,22 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 from __future__ import absolute_import
 from datetime import datetime, timedelta
 
+import logging
 import re
 
 import inflect
 import requests
 import streetaddress
 
-from flask import Flask, jsonify, request
+from flask import abort, Flask, jsonify, request
 from lxml import etree, html
 
 app = Flask(__name__)
 
 DATE_FORMAT = "%Y-%m-%d"
+
+logging.basicConfig(format='%(message)s')
+log = logging.getLogger(__name__)
 
 _digits = re.compile(r'\d')
 def contains_digits(maybe_digits):
@@ -80,6 +84,7 @@ def property_handler(propkey):
                                     else:
                                         datadict[tdkey] = tdvalue
                             datagroups.append(datadict)
+        log.warning('datagroups: %s',  datagroups)
         return jsonify({ 'result' : datagroups })
     except requests.HTTPError as response:
         return jsonify({ 'error' : 'error - Scrape: ' + str(response) })
@@ -161,8 +166,8 @@ def search_handler():
 
             # Embarassing hack for cases where this tuple is ''
             # but we want an orderly concatenation later.
-            if record[3] == '':
-                record[3] = '_'
+            if len(record) < 4:
+                record.append(' ')
 
             # 0 is the propkey
             # 1 is the house number
@@ -174,7 +179,11 @@ def search_handler():
                 record[2] + ' ' + record[3]
             ])
 
-        return jsonify({ 'result' : searchresult })
+        log.warning('searchresult: %s',  searchresult)
+        if searchresult:
+            return jsonify({ 'result' : searchresult })
+        else:
+            return abort(404, description="Address not found.")
     except RuntimeError as err:
         print('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
         return jsonify({ 'error' : "Cannot search :( <br/>" + str(err) })
@@ -191,6 +200,8 @@ def garbage_collection_handler():
         'http://3-3.appletonapi.appspot.com/search?q=' + addr, timeout=15
     )
     search_list = search_response.json()
+    log.warning('search_response: %s', str(search_response))
+    log.warning('search_list: %s', search_list)
 
     # Let's just use the first result ¯\_(ツ)_/¯
     prop_response = requests.get(
