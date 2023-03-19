@@ -16,7 +16,7 @@ Apps that allow you to lookup recycling pickup schedule for the current week:
 * [Is it recycling week in Appleton?](https://github.com/dhmncivichacks/isitrecycling) - web app
 * [Civic Hack API Locator](https://github.com/mrosack/civic-hack-api-locator) - Not a client, but an API discovery/contract project to which AppletonAPI will attempt to adhere to
 
-## API v3.2.0 (current)
+## API v3.3.0 (current)
 
 #### Search
 
@@ -28,7 +28,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result consisting of a list of possible property ids.
 
-**Example**: http://3-2.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
+**Example**: http://3-3.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
 
 ```
 [
@@ -58,7 +58,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result containing the majority of data available on my.appleton.org for that property.
 
-**Example**: http://3-2.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
+**Example**: http://3-3.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
 
 ```
 [
@@ -168,6 +168,34 @@ Search for a property within the city of Appleton using the street address.
         "yearbuilt": "1952"
     }
 ]
+```
+
+## Deployment notes (for the maintainer)
+Use miniconda/conda within VSCode to create a venv for you and the tell VSCode to use it for the below.
+```
+Assorted pre-requisites:
+
+# Python 2 to 3 tool
+$ pip install modernize
+$ python-modernize -w appletonapi.py
+
+# Googly dev server tools
+$ sudo apt-get update && sudo apt-get install google-cloud-sdk-skaffold google-cloud-sdk-bigtable-emulator google-cloud-sdk-anthos-auth google-cloud-sdk-log-streaming google-cloud-sdk-pubsub-emulator google-cloud-sdk google-cloud-sdk-terraform-tools google-cloud-sdk-cbt google-cloud-sdk-harbourbridge google-cloud-sdk-minikube google-cloud-sdk-spanner-emulator google-cloud-sdk-datastore-emulator google-cloud-sdk-app-engine-python-extras google-cloud-sdk-kpt google-cloud-sdk-kubectl-oidc google-cloud-sdk-package-go-module google-cloud-sdk-cloud-build-local google-cloud-sdk-local-extract google-cloud-sdk-app-engine-go google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-java google-cloud-sdk-app-engine-grpc google-cloud-sdk-gke-gcloud-auth-plugin google-cloud-sdk-config-connector google-cloud-sdk-nomos google-cloud-sdk-firestore-emulator kubectl google-cloud-sdk-cloud-run-proxy
+
+# More Googly bits
+$ pip install --upgrade gcloud
+$ pip install --upgrade google-api-python-client
+$ pip install google-cloud
+
+# Install local deps
+$ pip install -r requirements.txt
+
+# Run Googly dev server
+$ dev_appserver.py --dev_appserver_log_level debug --application appletonapi .
+
+$ gcloud app logs tail -s default
+
+$ gcloud app deploy --version 3-3 --no-promote
 ```
 ## Deprecated API versions.
 

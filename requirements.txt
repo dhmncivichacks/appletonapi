@@ -1,0 +1,6 @@
+lxml
+Flask
+jsonify
+inflect
+requests
+streetaddress
