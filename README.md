@@ -16,7 +16,7 @@ Apps that allow you to lookup recycling pickup schedule for the current week:
 * [Is it recycling week in Appleton?](https://github.com/dhmncivichacks/isitrecycling) - web app
 * [Civic Hack API Locator](https://github.com/mrosack/civic-hack-api-locator) - Not a client, but an API discovery/contract project to which AppletonAPI will attempt to adhere to
 
-## API v3.2.0 (current)
+## API v3.3.0 (current)
 
 #### Search
 
@@ -28,7 +28,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result consisting of a list of possible property ids.
 
-**Example**: http://3-2.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
+**Example**: http://3-3.appletonapi.appspot.com/search?q=121%20Douglas%20St (street address for the Appleton Makerspace)
 
 ```
 [
@@ -58,7 +58,7 @@ Search for a property within the city of Appleton using the street address.
 
 **Returns**: JSON result containing the majority of data available on my.appleton.org for that property.
 
-**Example**: http://3-2.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
+**Example**: http://3-3.appletonapi.appspot.com/property/315173204 (property key for the [Appleton Makerspace](http://appletonmakerspace.org))
 
 ```
 [

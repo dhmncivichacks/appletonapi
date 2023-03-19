@@ -183,6 +183,7 @@ def search_handler():
         if searchresult:
             return jsonify({ 'result' : searchresult })
         else:
+            log.warning('search_handler: Address not found.')
             return abort(404, description="Address not found.")
     except RuntimeError as err:
         print('SEARCH FAIL! my.appleton.org up? scrape assumptions still valid?')
@@ -197,15 +198,18 @@ def garbage_collection_handler():
 
     addr = request.args['addr']
     search_response = requests.get(
-        'http://3-3.appletonapi.appspot.com/search?q=' + addr, timeout=15
+        'http://appletonapi.appspot.com/search?q=' + addr, timeout=15
     )
+    if search_response.status_code == 404:
+        log.warning('garbage_collection_handler: Address not found.')
+        return abort(404, description="Address not found.")
     search_list = search_response.json()
     log.warning('search_response: %s', str(search_response))
     log.warning('search_list: %s', search_list)
 
     # Let's just use the first result ¯\_(ツ)_/¯
     prop_response = requests.get(
-        'http://3-3.appletonapi.appspot.com/property/' + search_list['result'][0][0],
+        'http://appletonapi.appspot.com/property/' + search_list['result'][0][0],
         timeout=15
     )
     property_data = prop_response.json()
@@ -235,7 +239,7 @@ def garbage_collection_handler():
         cur_date += timedelta(days=1)
         lookahead_days += 1
 
-    return jsonify({ 'result': collection_days })
+    return jsonify(collection_days)
 
 def day_of_week_string_to_int(string_day):
     '''Map numeric day of week from upstream to human readable day.'''
